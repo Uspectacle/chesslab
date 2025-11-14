@@ -66,3 +66,6 @@ if __name__ == "__main__":
         session=session,
         seed=2,
     )
+
+    print(white_player)
+    print(black_player)

@@ -4,11 +4,13 @@ Provides high-level functions for interacting with the database,
 abstracting away SQLAlchemy details for common operations.
 """
 
+import json
 from typing import Any, Dict, List, Optional
 
 import chess
 import chess.engine
 import structlog
+from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 
 from chesslab.engines import engine_commands
@@ -27,10 +29,16 @@ def get_player_by_attributes(
     expected_elo: int,
     options: Optional[Dict[str, Any]] = None,
 ) -> Optional[Player]:
+    player = Player(
+        engine_type=engine_type, expected_elo=expected_elo, options=options or {}
+    )
     return (
         session.query(Player)
-        .filter_by(
-            engine_type=engine_type, expected_elo=expected_elo, options=options or {}
+        .filter(
+            Player.engine_type == player.engine_type,
+            Player.expected_elo == player.expected_elo,
+            cast(Player.options, String)
+            == cast(json.dumps(options, sort_keys=True), String),
         )
         .first()
     )

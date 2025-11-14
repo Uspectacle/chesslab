@@ -9,13 +9,13 @@ from typing import Any, Dict
 
 import structlog
 from sqlalchemy import (
-    JSON,
     Float,
     ForeignKey,
     Index,
     String,
     Text,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -40,18 +40,26 @@ class Player(Base):
     )
     created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
+    # Games played as white or black
     white_games: Mapped[list["Game"]] = relationship(
         "Game", foreign_keys="Game.white_player_id", back_populates="white_player"
     )
     black_games: Mapped[list["Game"]] = relationship(
         "Game", foreign_keys="Game.black_player_id", back_populates="black_player"
     )
+
+    # Evaluations made by this player
     evaluations: Mapped[list["Evaluation"]] = relationship(
         "Evaluation", back_populates="evaluator"
     )
 
+    # Requests assigned to this player
+    requests: Mapped[list["Request"]] = relationship(
+        "Request", back_populates="evaluator"
+    )
+
     def __repr__(self) -> str:
-        return f"<Player(id={self.id}, engine_type='{self.engine_type}', expected_elo='{self.expected_elo})>"
+        return f"<Player(id={self.id}, engine_type='{self.engine_type}', expected_elo={self.expected_elo})>"
 
 
 class Game(Base):
@@ -172,12 +180,15 @@ class Request(Base):
         default=datetime.now, nullable=False, index=True
     )
 
+    # Relationships
     move: Mapped["Move"] = relationship("Move", back_populates="requests")
-    evaluator: Mapped["Player"] = relationship("Player", back_populates="evaluations")
+    evaluator: Mapped["Player"] = relationship("Player", back_populates="requests")
 
     __table_args__ = (
         Index("idx_request_status_evaluator", "status", "evaluator_id", "created_at"),
     )
 
     def __repr__(self) -> str:
-        return f"<Request(id={self.id}, move={self.move_id}, status='{self.status}')>"
+        return (
+            f"<Request(id={self.id}, move_id={self.move_id}, status='{self.status}')>"
+        )
