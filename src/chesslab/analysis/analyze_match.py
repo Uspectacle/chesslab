@@ -12,10 +12,10 @@ from sqlalchemy.orm import Session
 from chesslab.analysis.elo_tools import elo_from_mean_score, expected_score
 from chesslab.arena.init_engines import get_or_create_random_player
 from chesslab.storage import (
+    Player,
     get_head_to_head_games,
+    get_session,
 )
-from chesslab.storage.db_tools import get_session
-from chesslab.storage.schema import Player
 
 
 class MatchAnalysis:
@@ -155,19 +155,19 @@ def analyze_match(
 
 
 if __name__ == "__main__":
-    session = get_session()
-    player = get_or_create_random_player(
-        session=session,
-        seed=1,
-    )
-    opponent = get_or_create_random_player(
-        session=session,
-        seed=2,
-    )
+    with get_session() as session:
+        player = get_or_create_random_player(
+            session=session,
+            seed=1,
+        )
+        opponent = get_or_create_random_player(
+            session=session,
+            seed=2,
+        )
 
-    analyze_match(
-        session=session,
-        player=player,
-        opponent=opponent,
-        output_dir="analysis_results",
-    )
+        analyze_match(
+            session=session,
+            player=player,
+            opponent=opponent,
+            output_dir="analysis_results",
+        )

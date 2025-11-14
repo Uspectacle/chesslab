@@ -14,9 +14,7 @@ from sqlalchemy.orm import Session
 from chesslab.analysis.analyze_match import MatchAnalysis
 from chesslab.analysis.elo_tools import expected_score
 from chesslab.arena.init_engines import get_or_create_random_player
-from chesslab.storage import Game
-from chesslab.storage.db_tools import get_session
-from chesslab.storage.schema import Player
+from chesslab.storage import Game, Player, get_session
 
 
 class CampaignAnalysis:
@@ -281,24 +279,24 @@ def analyze_campaign(
 
 
 if __name__ == "__main__":
-    session = get_session()
-    player = get_or_create_random_player(
-        session=session,
-        seed=1,
-    )
-    opponents = [
-        get_or_create_random_player(
+    with get_session() as session:
+        player = get_or_create_random_player(
             session=session,
-            seed=2,
-        ),
-        get_or_create_random_player(
+            seed=1,
+        )
+        opponents = [
+            get_or_create_random_player(
+                session=session,
+                seed=2,
+            ),
+            get_or_create_random_player(
+                session=session,
+                seed=3,
+            ),
+        ]
+        analyze_campaign(
             session=session,
-            seed=3,
-        ),
-    ]
-    analyze_campaign(
-        session=session,
-        player=player,
-        opponents=opponents,
-        output_dir="analysis_results",
-    )
+            player=player,
+            opponents=opponents,
+            output_dir="analysis_results",
+        )

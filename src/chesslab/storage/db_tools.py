@@ -5,6 +5,7 @@ Uses PostgreSQL with proper concurrent write support and JSON fields.
 """
 
 import os
+from contextlib import contextmanager
 
 import structlog
 from sqlalchemy import (
@@ -66,8 +67,18 @@ def create_session(engine: Engine) -> Session:
     return Session()
 
 
-def get_session(database_url: str | None = None) -> Session:
-    return create_session(create_db_engine(database_url))
+@contextmanager
+def get_session(database_url: str | None = None):
+    """Context manager for database sessions with automatic cleanup."""
+    session = create_session(create_db_engine(database_url))
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def init_db(engine: Engine):
