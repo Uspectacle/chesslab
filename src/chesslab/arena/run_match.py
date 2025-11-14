@@ -28,7 +28,11 @@ logger = structlog.get_logger()
 
 
 def update_and_get_board(session: Session, game: Game) -> chess.Board:
-    board = chess.Board(game.opening_fen) if game.opening_fen else chess.Board()
+    board = (
+        chess.Board(game.game_metadata.get("opening_fen"))
+        if game.game_metadata
+        else chess.Board()
+    )
 
     if board.is_game_over():
         return board
@@ -134,3 +138,5 @@ if __name__ == "__main__":
     )
 
     run_games(session=session, games=games)
+
+    print(games)
