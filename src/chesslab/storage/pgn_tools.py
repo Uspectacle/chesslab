@@ -284,7 +284,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="ChessLab PGN Tools")
     parser.add_argument(
-        "--db", default="postgresql://localhost/chesslab", help="Database URL"
+        "--db",
+        default="postgresql://chesslab:chesslab_dev@localhost:5432/chesslab",
+        help="Database URL",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)

@@ -3,29 +3,16 @@
 Initializes the PostgreSQL database schema and runs any migrations.
 """
 
-import os
+import logging
 import sys
-from pathlib import Path
 
 import structlog
 
+from chesslab.env import get_database_url
 from chesslab.storage.db_tools import create_db_engine, init_db
 from chesslab.storage.schema import Base
 
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-
 logger = structlog.get_logger()
-
-
-def get_database_url() -> str:
-    """Get database URL from environment or use default."""
-    # Try environment variable first, then fall back to container default
-    return os.getenv(
-        "DATABASE_URL", "postgresql://chesslab:chesslab_dev@localhost:5432/chesslab"
-    )
 
 
 def setup_database(database_url: str | None = None):
@@ -91,52 +78,26 @@ def drop_all_tables(database_url: str | None = None):
         return False
 
 
-def main():
-    """Main setup script entry point."""
-    import argparse
-    import logging
-
+if __name__ == "__main__":
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
 
-    parser = argparse.ArgumentParser(description="ChessLab Database Setup")
-    parser.add_argument(
-        "--db",
-        default=None,
-        help="Database URL (default: from DATABASE_URL env var)",
-    )
-    parser.add_argument(
-        "--drop",
-        action="store_true",
-        help="Drop all tables before creating (WARNING: destroys data!)",
-    )
-
-    args = parser.parse_args()
-
-    db_url = args.db or get_database_url()
+    db_url = get_database_url()
 
     print("ChessLab Database Setup")
     print("=" * 50)
     print(f"Database: {db_url}")
     print()
 
-    if args.drop:
-        print("WARNING: This will delete all existing data!")
-        response = input("Type 'yes' to confirm: ")
-        if response.lower() != "yes":
-            print("Aborted")
-            return
-
+    print("WARNING: Do you want to delete all existing data?")
+    response = input("Type 'yes' to confirm: ")
+    if response.lower() != "yes":
+        print("Aborted")
+    else:
         if not drop_all_tables(db_url):
             sys.exit(1)
-        print()
+    print()
 
     if setup_database(db_url):
         print("Setup completed successfully!")
-    else:
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
