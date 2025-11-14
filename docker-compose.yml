@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chesslab-db
+    environment:
+      POSTGRES_DB: chesslab
+      POSTGRES_USER: chesslab
+      POSTGRES_PASSWORD: chesslab_dev
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chesslab -d chesslab"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: pgAdmin for database management UI
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: chesslab-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@chesslab.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:

@@ -1,0 +1,26 @@
+[project]
+name = "chesslab"
+version = "0.1.0"
+description = "Modular chess engine testing framework"
+readme = "README.md"
+authors = [
+    { name = "Uspectacle", email = "super.mario.larsen@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "psycopg2-binary>=2.9.11",
+    "python-chess>=1.999",
+    "scipy>=1.16.3",
+    "scipy-stubs>=1.16.3.0",
+    "sqlalchemy>=2.0.44",
+    "structlog>=25.5.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.8,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = []
