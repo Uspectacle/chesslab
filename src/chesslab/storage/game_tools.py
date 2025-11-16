@@ -233,21 +233,26 @@ def delete_games_by_players(
         white_player_id=white_player_id,
         black_player_id=black_player_id,
     )
-    deleted_count = (
+
+    games = (
         session.query(Game)
         .filter(
             (Game.white_player_id == white_player_id)
             & (Game.black_player_id == black_player_id)
         )
-        .delete(synchronize_session=False)
+        .all()
     )
 
+    for game in games:
+        session.delete(game)
+
     session.commit()
+
     logger.info(
         "Deleted games successfully",
         white_player_id=white_player_id,
         black_player_id=black_player_id,
-        deleted_count=deleted_count,
+        deleted_count=len(games),
     )
 
 

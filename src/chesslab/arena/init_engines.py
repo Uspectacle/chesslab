@@ -2,6 +2,7 @@ import logging
 import random
 from typing import Any, Dict, Optional
 
+import chess.engine
 import structlog
 from sqlalchemy.orm import Session
 
@@ -11,11 +12,8 @@ logger = structlog.get_logger()
 
 
 def stockfish_elo(depth: int) -> int:
-    logger.debug("Calculating Stockfish ELO", depth=depth)
     elo = 3500 / (1 + 30 * (2.71828 ** (-0.25 * depth)))
-    calculated_elo = int(round(elo))
-    logger.debug("Calculated Stockfish ELO", depth=depth, elo=calculated_elo)
-    return calculated_elo
+    return int(round(elo))
 
 
 def get_or_create_stockfish_player(
@@ -49,6 +47,7 @@ def get_or_create_stockfish_player(
         engine_type="Stockfish",
         expected_elo=elo or stockfish_elo(depth),
         options=options,
+        limit=chess.engine.Limit(depth=depth),
     )
     logger.info(
         "Stockfish player ready",

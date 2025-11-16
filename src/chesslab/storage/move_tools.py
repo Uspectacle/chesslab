@@ -10,7 +10,7 @@ from typing import List, Optional
 import structlog
 from sqlalchemy.orm import Session
 
-from chesslab.storage.schema import Move
+from chesslab.storage.schema import Game, Move
 
 logger = structlog.get_logger()
 
@@ -80,3 +80,23 @@ def get_game_moves(session: Session, game_id: int) -> List[Move]:
         move_count=len(moves),
     )
     return moves
+
+
+def delete_moves_not_played(session: Session, game: Game) -> None:
+    logger.info("Deleting moves not played", game_id=game.id)
+    moves = (
+        session.query(Move)
+        .filter((Move.game_id == game.id) & (not Move.uci_move))
+        .all()
+    )
+
+    for move in moves:
+        session.delete(move)
+
+    session.commit()
+
+    logger.info(
+        "Deleted moves successfully",
+        game_id=game.id,
+        deleted_count=len(moves),
+    )

@@ -4,16 +4,14 @@ Provides high-level functions for interacting with the database,
 abstracting away SQLAlchemy details for common operations.
 """
 
-import json
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional
 
 import chess
 import chess.engine
 import structlog
-from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 
-from chesslab.engines import engine_commands
 from chesslab.storage.schema import Player
 
 logger = structlog.get_logger()
@@ -39,6 +37,7 @@ def get_player_by_attributes(
     engine_type: str,
     expected_elo: int,
     options: Optional[Dict[str, Any]] = None,
+    limit: Optional[chess.engine.Limit] = None,
 ) -> Optional[Player]:
     logger.debug(
         "Fetching player by attributes",
@@ -47,33 +46,30 @@ def get_player_by_attributes(
         has_options=options is not None,
     )
     player = Player(
-        engine_type=engine_type, expected_elo=expected_elo, options=options or {}
+        engine_type=engine_type,
+        expected_elo=expected_elo,
+        options=options or {},
+        limit=asdict(limit or chess.engine.Limit()),
     )
-    result = (
-        session.query(Player)
-        .filter(
-            Player.engine_type == player.engine_type,
-            Player.expected_elo == player.expected_elo,
-            cast(Player.options, String)
-            == cast(json.dumps(options, sort_keys=True), String),
-        )
-        .first()
+    candidates = session.query(Player).filter(
+        Player.engine_type == player.engine_type,
+        Player.expected_elo == player.expected_elo,
     )
 
-    if result:
-        logger.debug(
-            "Player found by attributes",
-            player_id=result.id,
-            engine_type=engine_type,
-        )
-    else:
-        logger.debug(
-            "No player found with attributes",
-            engine_type=engine_type,
-            expected_elo=expected_elo,
-        )
-
-    return result
+    for candidate in candidates:
+        if candidate.options == player.options and candidate.limit == player.limit:
+            logger.debug(
+                "Player found by attributes",
+                player_id=candidate.id,
+                engine_type=engine_type,
+            )
+            return candidate
+        else:
+            logger.debug(
+                "No player found with attributes",
+                engine_type=engine_type,
+                expected_elo=expected_elo,
+            )
 
 
 def create_player(
@@ -81,15 +77,20 @@ def create_player(
     engine_type: str,
     expected_elo: int,
     options: Optional[Dict[str, Any]] = None,
+    limit: Optional[chess.engine.Limit] = None,
 ) -> Player:
     logger.info(
         "Creating player",
         engine_type=engine_type,
         expected_elo=expected_elo,
         has_options=options is not None,
+        has_limits=limit is not None,
     )
     player = Player(
-        engine_type=engine_type, expected_elo=expected_elo, options=options or {}
+        engine_type=engine_type,
+        expected_elo=expected_elo,
+        options=options or {},
+        limit=asdict(limit or chess.engine.Limit()),
     )
     session.add(player)
     session.commit()
@@ -109,6 +110,7 @@ def get_or_create_player(
     engine_type: str,
     expected_elo: int,
     options: Optional[Dict[str, Any]] = None,
+    limit: Optional[chess.engine.Limit] = None,
 ) -> Player:
     logger.info(
         "Getting or creating player",
@@ -120,6 +122,7 @@ def get_or_create_player(
         engine_type=engine_type,
         expected_elo=expected_elo,
         options=options,
+        limit=limit,
     )
 
     if player:
@@ -135,50 +138,13 @@ def get_or_create_player(
         engine_type=engine_type,
         expected_elo=expected_elo,
     )
-    return create_player(session, engine_type, expected_elo, options)
-
-
-def get_engine(player: Player) -> chess.engine.SimpleEngine:
-    logger.info(
-        "Getting engine for player",
-        player_id=player.id,
-        engine_type=player.engine_type,
+    return create_player(
+        session=session,
+        engine_type=engine_type,
+        expected_elo=expected_elo,
+        options=options,
+        limit=limit,
     )
-    command = engine_commands.get(player.engine_type)
-
-    if not command:
-        logger.critical(
-            "Engine type not found",
-            player_id=player.id,
-            engine_type=player.engine_type,
-        )
-        raise RuntimeError(f"Unkown engine type: {player.engine_type}")
-
-    logger.debug(
-        "Starting engine process",
-        player_id=player.id,
-        engine_type=player.engine_type,
-        command=command,
-    )
-
-    engine = chess.engine.SimpleEngine.popen_uci(command)
-
-    if player.options:
-        logger.debug(
-            "Configuring engine options",
-            player_id=player.id,
-            option_count=len(player.options),
-        )
-
-    engine.configure(player.options)
-
-    logger.info(
-        "Engine ready",
-        player_id=player.id,
-        engine_type=player.engine_type,
-    )
-
-    return engine
 
 
 def list_players(session: Session, engine_type: Optional[str] = None) -> List[Player]:

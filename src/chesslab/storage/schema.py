@@ -35,7 +35,8 @@ class Player(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     engine_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     expected_elo: Mapped[int] = mapped_column(nullable=False)
-    options: Mapped[Dict[str, str | int | bool | None]] = mapped_column(JSON)
+    options: Mapped[Dict[str, Any]] = mapped_column(JSON)
+    limit: Mapped[Dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
     # Games played as white or black
@@ -103,7 +104,7 @@ class Move(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     game_id: Mapped[int] = mapped_column(
-        ForeignKey("games.id"), nullable=False, index=True
+        ForeignKey("games.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ply_index: Mapped[int] = mapped_column(nullable=False)  # 1..N (half-move number)
     move_number: Mapped[int] = mapped_column(nullable=False)  # Full move number

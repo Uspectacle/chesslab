@@ -1,9 +1,10 @@
-"""Tournament runner and game coordinator.
+"""Tournament runner and game coordinator with async support.
 
 Manages parallel game execution, player registration, and result persistence.
 Supports concurrent games with configurable limits to avoid resource exhaustion.
 """
 
+import asyncio
 import logging
 from typing import List
 
@@ -14,56 +15,80 @@ from chesslab.arena.init_engines import (
     get_or_create_random_player,
     get_or_create_stockfish_player,
 )
-from chesslab.arena.play_move import update_and_get_board
+from chesslab.arena.run_game import run_game
 from chesslab.storage import (
     Game,
     get_or_create_games,
     get_session,
 )
+from chesslab.storage.move_tools import delete_moves_not_played
 
 logger = structlog.get_logger()
 
 
-def run_games(session: Session, games: List[Game]):
-    logger.info("Starting game runner", total_games=len(games))
-    game_to_complete = [game for game in games if not game.result]
+async def run_multiple_games(
+    session: Session, games: List[Game], max_concurrent: int = 10
+):
+    """Run games asynchronously with controlled concurrency.
+
+    Args:
+        session: Database session
+        games: List of games to run
+        max_concurrent: Maximum number of concurrent game updates
+    """
+    logger.info("Starting async game runner", total_games=len(games))
+    games_to_complete = [game for game in games if not game.result]
 
     logger.info(
         "Games to complete",
-        count=len(game_to_complete),
-        finished_count=len(games) - len(game_to_complete),
+        count=len(games_to_complete),
+        finished_count=len(games) - len(games_to_complete),
     )
 
+    for game in games_to_complete:
+        delete_moves_not_played(session=session, game=game)
+
     iteration = 0
-    while len(game_to_complete):
+    while len(games_to_complete):
         iteration += 1
         logger.debug(
             "Running game iteration",
             iteration=iteration,
-            games_pending=len(game_to_complete),
+            games_pending=len(games_to_complete),
         )
 
-        for game in game_to_complete:
-            try:
-                update_and_get_board(session=session, game=game)
-            except Exception as e:
-                logger.error(
-                    "Error updating game board",
-                    game_id=game.id,
-                    iteration=iteration,
-                    error=str(e),
-                    exc_info=True,
-                )
+        # Create tasks for all games, but limit concurrency with a semaphore
+        semaphore = asyncio.Semaphore(max_concurrent)
 
-        previous_count = len(game_to_complete)
-        game_to_complete = [game for game in game_to_complete if not game.result]
-        completed_in_iteration = previous_count - len(game_to_complete)
+        async def update_with_semaphore(game: Game):
+            async with semaphore:
+                try:
+                    return await run_game(session=session, game=game)
+
+                except Exception as e:
+                    logger.error(
+                        "Error updating game board",
+                        game_id=game.id,
+                        iteration=iteration,
+                        error=str(e),
+                        exc_info=True,
+                    )
+                    return None
+
+        # Run all game updates concurrently with controlled parallelism
+        await asyncio.gather(
+            *[update_with_semaphore(game) for game in games_to_complete]
+        )
+
+        previous_count = len(games_to_complete)
+        games_to_complete = [game for game in games_to_complete if not game.result]
+        completed_in_iteration = previous_count - len(games_to_complete)
 
         logger.info(
             "Iteration completed",
             iteration=iteration,
             completed_in_iteration=completed_in_iteration,
-            remaining=len(game_to_complete),
+            remaining=len(games_to_complete),
         )
 
     logger.info(
@@ -152,7 +177,7 @@ def get_or_create_match(
 if __name__ == "__main__":
     logger.info("Starting match runner script")
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
     )
 
     with get_session() as session:
@@ -182,7 +207,5 @@ if __name__ == "__main__":
         logger.info("Match setup complete", game_count=len(games))
 
         logger.info("Running games")
-        run_games(session=session, games=games)
+        asyncio.run(run_multiple_games(session=session, games=games))
         logger.info("Games finished", game_count=len(games))
-
-        print(games)

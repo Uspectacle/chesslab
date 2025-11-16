@@ -11,7 +11,6 @@ from chesslab.storage.game_tools import (
 )
 from chesslab.storage.move_tools import create_move
 from chesslab.storage.player_tools import (
-    get_engine,
     get_or_create_player,
     get_player_by_id,
 )
@@ -27,7 +26,6 @@ __all__ = [
     "get_player_by_id",
     "get_head_to_head_games",
     "get_default_database_url",
-    "get_engine",
     "create_move",
     "get_move_dict",
     "get_or_create_games",
