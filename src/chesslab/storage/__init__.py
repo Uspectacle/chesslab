@@ -9,7 +9,7 @@ from chesslab.storage.game_tools import (
     get_move_dict,
     get_or_create_games,
 )
-from chesslab.storage.move_tools import create_move
+from chesslab.storage.move_tools import create_move, delete_moves_not_played
 from chesslab.storage.player_tools import (
     get_or_create_player,
     get_player_by_id,
@@ -30,4 +30,5 @@ __all__ = [
     "get_move_dict",
     "get_or_create_games",
     "get_or_create_player",
+    "delete_moves_not_played",
 ]

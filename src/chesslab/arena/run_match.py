@@ -18,10 +18,10 @@ from chesslab.arena.init_engines import (
 from chesslab.arena.run_game import run_game
 from chesslab.storage import (
     Game,
+    delete_moves_not_played,
     get_or_create_games,
     get_session,
 )
-from chesslab.storage.move_tools import delete_moves_not_played
 
 logger = structlog.get_logger()
 
@@ -102,7 +102,7 @@ def get_or_create_match(
     session: Session,
     white_player_id: int,
     black_player_id: int,
-    num_games: int = 1,
+    num_games: int = 100,
     remove_existing: bool = True,
     get_existing: bool = True,
     alternate_color: bool = True,

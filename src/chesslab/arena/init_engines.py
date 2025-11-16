@@ -17,7 +17,7 @@ def stockfish_elo(depth: int) -> int:
 
 
 def get_or_create_stockfish_player(
-    session: Session, elo: Optional[int], depth: int = 10
+    session: Session, elo: Optional[int | float], depth: int = 10
 ) -> Player:
     logger.info(
         "Getting or creating Stockfish player",
@@ -45,7 +45,7 @@ def get_or_create_stockfish_player(
     player = get_or_create_player(
         session=session,
         engine_type="Stockfish",
-        expected_elo=elo or stockfish_elo(depth),
+        expected_elo=int(elo) if elo else stockfish_elo(depth),
         options=options,
         limit=chess.engine.Limit(depth=depth),
     )
@@ -59,7 +59,7 @@ def get_or_create_stockfish_player(
 
 def get_or_create_random_player(
     session: Session,
-    seed: Optional[int],
+    seed: Optional[int] = None,
 ) -> Player:
     logger.info("Getting or creating random player", seed=seed)
 
