@@ -5,7 +5,7 @@ abstracting away SQLAlchemy details for common operations.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import chess
 import structlog
@@ -22,6 +22,8 @@ def create_game(
     white_player_id: int,
     black_player_id: int,
     opening_fen: Optional[str] = None,
+    game_round: Optional[int] = None,
+    guess_round: bool = True,
 ) -> Game:
     """Create a new chess game in the database.
 
@@ -44,11 +46,25 @@ def create_game(
         has_opening_fen=opening_fen is not None,
     )
 
+    game_metadata: Dict[str, Any] = {}
+
     if opening_fen:
         try:
             chess.Board(opening_fen)
         except ValueError as e:
             raise ValueError(f"Invalid opening FEN: {e}")
+
+        game_metadata["opening_fen"] = opening_fen
+
+    if game_round:
+        game_metadata["round"] = game_round
+    elif guess_round:
+        played_rounds = get_head_to_head_games(
+            session=session,
+            player1_id=white_player_id,
+            player2_id=black_player_id,
+        )
+        game_metadata["round"] = len(played_rounds) + 1
 
     game = Game(
         white_player_id=white_player_id,
@@ -92,9 +108,6 @@ def get_player_games(session: Session, player_id: int, limit: int = 100) -> List
 def get_head_to_head_games(
     session: Session, player1_id: int, player2_id: int
 ) -> List[Game]:
-    logger.debug(
-        "Fetching head-to-head games", player1_id=player1_id, player2_id=player2_id
-    )
     games = (
         session.query(Game)
         .filter(
@@ -109,7 +122,7 @@ def get_head_to_head_games(
         )
         .all()
     )
-    logger.info(
+    logger.debug(
         "Retrieved head-to-head games",
         player1_id=player1_id,
         player2_id=player2_id,
@@ -166,7 +179,7 @@ def get_or_create_games(
     Returns:
         List of Game objects
     """
-    logger.info(
+    logger.debug(
         "Getting or creating games",
         white_player_id=white_player_id,
         black_player_id=black_player_id,
@@ -201,14 +214,6 @@ def get_or_create_games(
             black_player_id=black_player_id,
         )
 
-    games_needed = num_games - len(games)
-    if games_needed > 0:
-        logger.info(
-            "Creating additional games",
-            games_needed=games_needed,
-            current_count=len(games),
-        )
-
     while len(games) < num_games:
         game = create_game(session, white_player_id, black_player_id)
         games.append(game)
@@ -216,7 +221,7 @@ def get_or_create_games(
             "Game added", game_id=game.id, current_total=len(games), target=num_games
         )
 
-    logger.info(
+    logger.debug(
         "Get or create games completed",
         white_player_id=white_player_id,
         black_player_id=black_player_id,
@@ -228,7 +233,7 @@ def get_or_create_games(
 def delete_games_by_players(
     session: Session, white_player_id: int, black_player_id: int
 ) -> None:
-    logger.info(
+    logger.debug(
         "Deleting games",
         white_player_id=white_player_id,
         black_player_id=black_player_id,
@@ -242,6 +247,9 @@ def delete_games_by_players(
         )
         .all()
     )
+
+    if not len(games):
+        return
 
     for game in games:
         session.delete(game)
@@ -257,11 +265,33 @@ def delete_games_by_players(
 
 
 def get_move_dict(moves: List[Move]) -> Dict[int, Move]:
-    logger.debug("Building move dictionary", move_count=len(moves))
     move_dict: Dict[int, Move] = {}
 
     for move in moves:
         move_dict[move.ply_index] = move
 
-    logger.debug("Move dictionary built", dictionary_size=len(move_dict))
     return move_dict
+
+
+def get_board(game: Game) -> chess.Board:
+    opening_fen = game.game_metadata.get("opening_fen")
+    board = chess.Board(opening_fen) if opening_fen else chess.Board()
+
+    move_dict = get_move_dict(game.moves)
+
+    while not board.is_game_over():
+        ply_index = board.ply() + 1
+        move = move_dict.get(ply_index)
+
+        if not move or not move.uci_move:
+            return board
+
+        board.push(chess.Move.from_uci(move.uci_move))
+
+    logger.debug(
+        "Board extracted",
+        game_id=game.id,
+        ply=board.ply(),
+        fen=board.fen(),
+    )
+    return board

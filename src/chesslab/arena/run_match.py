@@ -12,8 +12,8 @@ import structlog
 from sqlalchemy.orm import Session
 
 from chesslab.arena.init_engines import (
-    get_or_create_random_player,
-    get_or_create_stockfish_player,
+    get_random_player,
+    get_stockfish_player,
 )
 from chesslab.arena.run_game import run_game
 from chesslab.storage import (
@@ -27,75 +27,30 @@ logger = structlog.get_logger()
 
 
 async def run_multiple_games(
-    session: Session, games: List[Game], max_concurrent: int = 10
+    session: Session, games: List[Game], max_concurrent: int = 8
 ):
-    """Run games asynchronously with controlled concurrency.
+    """Run games asynchronously with controlled concurrency."""
+    logger.debug("Starting async game runner", total_games=len(games))
 
-    Args:
-        session: Database session
-        games: List of games to run
-        max_concurrent: Maximum number of concurrent game updates
-    """
-    logger.info("Starting async game runner", total_games=len(games))
     games_to_complete = [game for game in games if not game.result]
-
-    logger.info(
-        "Games to complete",
-        count=len(games_to_complete),
-        finished_count=len(games) - len(games_to_complete),
-    )
+    logger.info("Games to complete", count=len(games_to_complete))
 
     for game in games_to_complete:
         delete_moves_not_played(session=session, game=game)
 
-    iteration = 0
-    while len(games_to_complete):
-        iteration += 1
-        logger.debug(
-            "Running game iteration",
-            iteration=iteration,
-            games_pending=len(games_to_complete),
-        )
+    semaphore = asyncio.Semaphore(max_concurrent)
 
-        # Create tasks for all games, but limit concurrency with a semaphore
-        semaphore = asyncio.Semaphore(max_concurrent)
+    async def run_with_limit(game: Game):
+        async with semaphore:
+            try:
+                return await run_game(session=session, game=game)
+            except Exception as e:
+                logger.error("Error running game", game_id=game.id, error=str(e))
+                return game
 
-        async def update_with_semaphore(game: Game):
-            async with semaphore:
-                try:
-                    return await run_game(session=session, game=game)
+    await asyncio.gather(*[run_with_limit(game) for game in games_to_complete])
 
-                except Exception as e:
-                    logger.error(
-                        "Error updating game board",
-                        game_id=game.id,
-                        iteration=iteration,
-                        error=str(e),
-                        exc_info=True,
-                    )
-                    return None
-
-        # Run all game updates concurrently with controlled parallelism
-        await asyncio.gather(
-            *[update_with_semaphore(game) for game in games_to_complete]
-        )
-
-        previous_count = len(games_to_complete)
-        games_to_complete = [game for game in games_to_complete if not game.result]
-        completed_in_iteration = previous_count - len(games_to_complete)
-
-        logger.info(
-            "Iteration completed",
-            iteration=iteration,
-            completed_in_iteration=completed_in_iteration,
-            remaining=len(games_to_complete),
-        )
-
-    logger.info(
-        "All games completed",
-        total_iterations=iteration,
-        total_games=len(games),
-    )
+    logger.info("All games completed", total_games=len(games))
 
 
 def get_or_create_match(
@@ -133,7 +88,7 @@ def get_or_create_match(
 
     games: List[Game] = []
 
-    if alternate_color:
+    if alternate_color and white_player_id != black_player_id:
         logger.debug(
             "Alternating colors",
             first_color_games=(num_games // 2) + (num_games % 2),
@@ -175,37 +130,23 @@ def get_or_create_match(
 
 
 if __name__ == "__main__":
-    logger.info("Starting match runner script")
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
     )
+    logger.info("Starting match runner script")
 
     with get_session() as session:
-        logger.info("Database session created")
+        # white_player = get_random_player(session=session)
+        white_player = get_stockfish_player(session=session)
+        black_player = get_random_player(session=session)
 
-        logger.info("Creating Stockfish player")
-        white_player = get_or_create_stockfish_player(
-            session=session,
-            elo=1320,
-        )
-        logger.info("White player ready", player_id=white_player.id)
-
-        logger.info("Creating random player")
-        black_player = get_or_create_random_player(
-            session=session,
-            seed=2,
-        )
-        logger.info("Black player ready", player_id=black_player.id)
-
-        logger.info("Setting up match")
         games = get_or_create_match(
             session=session,
             white_player_id=white_player.id,
             black_player_id=black_player.id,
             num_games=10,
         )
-        logger.info("Match setup complete", game_count=len(games))
 
-        logger.info("Running games")
         asyncio.run(run_multiple_games(session=session, games=games))
-        logger.info("Games finished", game_count=len(games))
+        for game in games:
+            print(game.result)

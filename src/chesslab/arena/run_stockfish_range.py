@@ -7,8 +7,8 @@ import structlog
 from sqlalchemy.orm import Session
 
 from chesslab.arena.init_engines import (
-    get_or_create_random_player,
-    get_or_create_stockfish_player,
+    get_random_player,
+    get_stockfish_player,
 )
 from chesslab.arena.run_match import get_or_create_match, run_multiple_games
 from chesslab.storage import Game, Player, get_session
@@ -22,8 +22,8 @@ def run_stockfish_range(
     min_elo: int = 1320,
     max_elo: int = 2200,
     num_step: int = 5,
-    num_games: int = 100,
-    remove_existing: bool = False,
+    num_games: int = 10,
+    remove_existing: bool = True,
     get_existing: bool = True,
     alternate_color: bool = True,
     max_concurrent: int = 10,
@@ -31,7 +31,7 @@ def run_stockfish_range(
     logger.info("Setting up all matchs")
     games: List[Game] = []
     for elo in np.linspace(min_elo, max_elo, num_step):
-        stockfish = get_or_create_stockfish_player(
+        stockfish = get_stockfish_player(
             session=session,
             elo=elo,
         )
@@ -58,5 +58,5 @@ if __name__ == "__main__":
     )
 
     with get_session() as session:
-        player = get_or_create_random_player(session=session)
+        player = get_random_player(session=session)
         run_stockfish_range(session=session, player=player)

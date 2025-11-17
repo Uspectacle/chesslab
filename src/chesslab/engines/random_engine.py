@@ -54,7 +54,7 @@ class RandomEngine(BaseEngine):
 
     def reset(self) -> None:
         """Reset the board and random number generator."""
-        self._rng = random.Random(self.seed)
+        self._rng = random.Random(self.seed if self.seed else None)
         logger.debug("Random number generator initialized", seed=self.seed)
         super().reset()
 

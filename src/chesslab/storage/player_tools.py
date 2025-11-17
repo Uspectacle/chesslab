@@ -38,7 +38,8 @@ def get_player_by_attributes(
     expected_elo: int,
     options: Optional[Dict[str, Any]] = None,
     limit: Optional[chess.engine.Limit] = None,
-) -> Optional[Player]:
+    create_not_raise: bool = True,
+) -> Player:
     logger.debug(
         "Fetching player by attributes",
         engine_type=engine_type,
@@ -64,34 +65,12 @@ def get_player_by_attributes(
                 engine_type=engine_type,
             )
             return candidate
-        else:
-            logger.debug(
-                "No player found with attributes",
-                engine_type=engine_type,
-                expected_elo=expected_elo,
-            )
 
+    if not create_not_raise:
+        raise ValueError(
+            f"No player found with type={engine_type} and elo={expected_elo}",
+        )
 
-def create_player(
-    session: Session,
-    engine_type: str,
-    expected_elo: int,
-    options: Optional[Dict[str, Any]] = None,
-    limit: Optional[chess.engine.Limit] = None,
-) -> Player:
-    logger.info(
-        "Creating player",
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-        has_options=options is not None,
-        has_limits=limit is not None,
-    )
-    player = Player(
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-        options=options or {},
-        limit=asdict(limit or chess.engine.Limit()),
-    )
     session.add(player)
     session.commit()
     session.refresh(player)
@@ -103,48 +82,6 @@ def create_player(
         expected_elo=expected_elo,
     )
     return player
-
-
-def get_or_create_player(
-    session: Session,
-    engine_type: str,
-    expected_elo: int,
-    options: Optional[Dict[str, Any]] = None,
-    limit: Optional[chess.engine.Limit] = None,
-) -> Player:
-    logger.info(
-        "Getting or creating player",
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-    )
-    player = get_player_by_attributes(
-        session=session,
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-        options=options,
-        limit=limit,
-    )
-
-    if player:
-        logger.info(
-            "Player already exists",
-            player_id=player.id,
-            engine_type=engine_type,
-        )
-        return player
-
-    logger.info(
-        "Creating new player",
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-    )
-    return create_player(
-        session=session,
-        engine_type=engine_type,
-        expected_elo=expected_elo,
-        options=options,
-        limit=limit,
-    )
 
 
 def list_players(session: Session, engine_type: Optional[str] = None) -> List[Player]:

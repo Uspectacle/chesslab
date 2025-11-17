@@ -2,7 +2,7 @@
 
 import random
 
-from chesslab.analysis.typing import Ballot
+from chesslab.analysis.chesslab_typing import Ballot
 
 
 def normalize_ballot(ballot: Ballot) -> Ballot:

@@ -93,7 +93,6 @@ async def play_move(
     if not protocol:
         protocol = await get_protocol(player)
         close_protocol = True
-
     try:
         logger.debug(
             "Starting engine calculation", move_id=move.id, fen=move.fen_before

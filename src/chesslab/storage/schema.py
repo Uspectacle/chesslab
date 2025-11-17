@@ -74,9 +74,7 @@ class Game(Base):
         default=datetime.now, nullable=False, index=True
     )
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    game_metadata: Mapped[Dict[str, Any] | None] = mapped_column(
-        "metadata", JSON, nullable=True
-    )
+    game_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON)
 
     white_player: Mapped["Player"] = relationship(
         "Player", foreign_keys=[white_player_id], back_populates="white_games"
@@ -146,9 +144,7 @@ class Evaluation(Base):
         String(10), nullable=False
     )  # Bestmove found
     score: Mapped[float] = mapped_column(Float, nullable=False)
-    analysis_metadata: Mapped[Dict[str, Any] | None] = mapped_column(
-        "metadata", JSON, nullable=True
-    )
+    analysis_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
     move: Mapped["Move"] = relationship("Move", back_populates="evaluations")

@@ -83,12 +83,15 @@ def get_game_moves(session: Session, game_id: int) -> List[Move]:
 
 
 def delete_moves_not_played(session: Session, game: Game) -> None:
-    logger.info("Deleting moves not played", game_id=game.id)
+    logger.debug("Deleting moves not played", game_id=game.id)
     moves = (
         session.query(Move)
         .filter((Move.game_id == game.id) & (not Move.uci_move))
         .all()
     )
+
+    if not len(moves):
+        return
 
     for move in moves:
         session.delete(move)

@@ -9,8 +9,8 @@ import structlog
 from sqlalchemy.orm import Session
 
 from chesslab.arena.init_engines import (
-    get_or_create_random_player,
-    get_or_create_stockfish_player,
+    get_random_player,
+    get_stockfish_player,
 )
 from chesslab.arena.play_move import get_protocol, play_move
 from chesslab.storage import (
@@ -19,7 +19,7 @@ from chesslab.storage import (
     get_move_dict,
     get_session,
 )
-from chesslab.storage.game_tools import create_game
+from chesslab.storage.game_tools import create_game, get_board
 
 logger = structlog.get_logger()
 
@@ -29,35 +29,15 @@ async def run_game(
     game: Game,
     white_protocol: Optional[chess.engine.Protocol] = None,
     black_protocol: Optional[chess.engine.Protocol] = None,
-) -> None:
+) -> Game:
     """Creates moves and schedules them asynchronously."""
     logger.info("Playing game", game_id=game.id)
 
-    try:
-        board = (
-            chess.Board(game.game_metadata.get("opening_fen"))
-            if game.game_metadata
-            else chess.Board()
-        )
-        logger.debug(
-            "Board initialized",
-            game_id=game.id,
-            has_opening_fen=bool(
-                game.game_metadata and game.game_metadata.get("opening_fen")
-            ),
-        )
-    except Exception as e:
-        logger.error(
-            "Failed to initialize board",
-            game_id=game.id,
-            error=str(e),
-            exc_info=True,
-        )
-        raise
+    board = get_board(game)
 
     if board.is_game_over():
         logger.info("Game already over", game_id=game.id, result=board.result())
-        return
+        return game
 
     move_dict = get_move_dict(game.moves)
     close_white_protocol = False
@@ -73,7 +53,7 @@ async def run_game(
     try:
         while not board.is_game_over():
             ply_index = board.ply() + 1
-            move = move_dict.get(board.ply() + 1)
+            move = move_dict.get(ply_index)
 
             if not move:
                 logger.info(
@@ -136,37 +116,25 @@ async def run_game(
                 await black_protocol.quit()
             except Exception as e:
                 logger.warning("Error closing black engine", error=str(e))
+    return game
 
 
 if __name__ == "__main__":
-    logger.info("Starting match runner script")
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
     )
 
     with get_session() as session:
-        logger.info("Database session created")
-
-        logger.info("Creating Stockfish player")
-        white_player = get_or_create_stockfish_player(
+        white_player = get_stockfish_player(
             session=session,
             elo=1320,
         )
-        logger.info("White player ready", player_id=white_player.id)
 
-        logger.info("Creating random player")
-        black_player = get_or_create_random_player(
-            session=session,
-            seed=2,
-        )
-        logger.info("Black player ready", player_id=black_player.id)
+        black_player = get_random_player(session=session)
 
-        logger.info("Setting up game")
         game = create_game(
             session=session,
             white_player_id=white_player.id,
             black_player_id=black_player.id,
         )
-        logger.info("Running game")
         asyncio.run(run_game(session=session, game=game))
-        logger.info("Game finished")

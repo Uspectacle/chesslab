@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from chesslab.analysis.campaign import Campaign
-from chesslab.analysis.typing import Player
+from chesslab.analysis.chesslab_typing import Player
 
 
 class Tournament:

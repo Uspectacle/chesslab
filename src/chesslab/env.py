@@ -25,7 +25,7 @@ def load_env():
 
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
-        logger.info("Enviroment file loaded", env_path=env_path)
+        logger.debug("Enviroment file loaded", env_path=env_path)
     else:
         logger.error("Enviroment file not found", env_path=env_path)
 

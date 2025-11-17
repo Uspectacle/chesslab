@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
+from chesslab.analysis.analyze_match import Match
+from chesslab.analysis.chesslab_typing import Player
 from chesslab.analysis.elo_tools import ensemble_elo_from_scores, expected_score
-from chesslab.analysis.match import Match
 from chesslab.analysis.stat_tools import (
     compute_ensemble_p_value,
     ensemble_mean_score,
     ensemble_standard_error,
 )
-from chesslab.analysis.typing import Player
 
 
 class Campaign:

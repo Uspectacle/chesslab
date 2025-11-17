@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from chesslab.analysis.analyze_match import MatchAnalysis
 from chesslab.analysis.elo_tools import expected_score
-from chesslab.arena.init_engines import get_or_create_random_player
+from chesslab.arena.init_engines import get_random_player
 from chesslab.storage import Game, Player, get_session
 
 
@@ -43,7 +43,7 @@ class CampaignAnalysis:
     @property
     def opponent_elos(self) -> List[float]:
         """ELOs of all opponents."""
-        return [match.opponent.elo for match in self.matches]
+        return [match.opponent.expected_elo for match in self.matches]
 
     @property
     def observed_scores(self) -> List[float]:
@@ -202,7 +202,7 @@ class CampaignAnalysis:
             min(self.opponent_elos) - 50, max(self.opponent_elos) + 50, 100
         )
         expected_curve = [
-            expected_score(self.player.elo, opp_elo) for opp_elo in x_range
+            expected_score(self.player.expected_elo, opp_elo) for opp_elo in x_range
         ]
 
         ax.plot(  # pyright: ignore[reportUnknownMemberType]
@@ -210,7 +210,7 @@ class CampaignAnalysis:
             expected_curve,
             "-",
             color="#ff0084",
-            label=f"Expected (ELO={int(self.player.elo)})",
+            label=f"Expected (ELO={int(self.player.expected_elo)})",
         )
 
         ax.set_xlabel("Opponent ELO")  # pyright: ignore[reportUnknownMemberType]
@@ -280,19 +280,10 @@ def analyze_campaign(
 
 if __name__ == "__main__":
     with get_session() as session:
-        player = get_or_create_random_player(
-            session=session,
-            seed=1,
-        )
+        player = get_random_player(session=session, create_not_raise=False)
         opponents = [
-            get_or_create_random_player(
-                session=session,
-                seed=2,
-            ),
-            get_or_create_random_player(
-                session=session,
-                seed=3,
-            ),
+            get_random_player(session=session, create_not_raise=False),
+            get_random_player(session=session, seed=49, create_not_raise=False),
         ]
         analyze_campaign(
             session=session,

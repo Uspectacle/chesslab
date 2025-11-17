@@ -4,7 +4,6 @@ Defines the database structure for players, games, moves, evaluations, and batch
 Uses PostgreSQL with proper concurrent write support and JSON fields.
 """
 
-import os
 from contextlib import contextmanager
 
 import structlog
@@ -12,21 +11,19 @@ from sqlalchemy import (
     Engine,
     create_engine,
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import (
+    DeclarativeBase,
     Session,
     sessionmaker,
 )
 
+from chesslab.env import get_database_url
+
 logger = structlog.get_logger()
-Base = declarative_base()
 
 
-def get_default_database_url() -> str:
-    """Get database URL from environment or use default."""
-    return os.getenv(
-        "DATABASE_URL", "postgresql://chesslab:chesslab_dev@localhost:5432/chesslab"
-    )
+class Base(DeclarativeBase):
+    pass
 
 
 def create_db_engine(
@@ -35,15 +32,15 @@ def create_db_engine(
     """Create database engine with sensible defaults.
 
     Args:
-        database_url: PostgreSQL connection string. If None, uses get_default_database_url()
+        database_url: PostgreSQL connection string. If None, uses get_database_url()
 
     Returns:
         SQLAlchemy Engine instance
     """
     if database_url is None:
-        database_url = get_default_database_url()
+        database_url = get_database_url()
 
-    logger.info("Creating database engine", database_url=database_url)
+    logger.debug("Creating database engine", database_url=database_url)
     engine = create_engine(
         database_url,
         pool_size=10,

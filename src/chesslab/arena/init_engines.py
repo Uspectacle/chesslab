@@ -1,31 +1,28 @@
 import logging
-import random
 from typing import Any, Dict, Optional
 
 import chess.engine
 import structlog
 from sqlalchemy.orm import Session
 
-from chesslab.storage import Player, get_or_create_player, get_session
+from chesslab.storage import Player, get_session
+from chesslab.storage.player_tools import get_player_by_attributes
 
 logger = structlog.get_logger()
 
 
 def stockfish_elo(depth: int) -> int:
-    elo = 3500 / (1 + 30 * (2.71828 ** (-0.25 * depth)))
+    elo = 66 * depth + 1570
+
     return int(round(elo))
 
 
-def get_or_create_stockfish_player(
-    session: Session, elo: Optional[int | float], depth: int = 10
+def get_stockfish_player(
+    session: Session,
+    elo: Optional[int | float] = None,
+    depth: int = 10,
+    create_not_raise: bool = True,
 ) -> Player:
-    logger.info(
-        "Getting or creating Stockfish player",
-        elo=elo,
-        depth=depth,
-        use_limit_strength=bool(elo),
-    )
-
     if bool(elo):
         options: Dict[str, Any] = {
             "UCI_LimitStrength": True,
@@ -42,38 +39,37 @@ def get_or_create_stockfish_player(
             calculated_elo=calculated_elo,
         )
 
-    player = get_or_create_player(
+    player = get_player_by_attributes(
         session=session,
         engine_type="Stockfish",
         expected_elo=int(elo) if elo else stockfish_elo(depth),
         options=options,
         limit=chess.engine.Limit(depth=depth),
+        create_not_raise=create_not_raise,
     )
+
     logger.info(
         "Stockfish player ready",
         player_id=player.id,
         expected_elo=player.expected_elo,
     )
+
     return player
 
 
-def get_or_create_random_player(
+def get_random_player(
     session: Session,
     seed: Optional[int] = None,
+    create_not_raise: bool = True,
 ) -> Player:
-    logger.info("Getting or creating random player", seed=seed)
+    logger.debug("Getting or creating random player", seed=seed)
 
-    if seed is None:
-        seed = random.randint(0, 2147483647)
-        logger.debug("Generated random seed", seed=seed)
-    else:
-        logger.debug("Using provided seed", seed=seed)
-
-    player = get_or_create_player(
+    player = get_player_by_attributes(
         session=session,
         engine_type="RandomEngine",
         expected_elo=300,
-        options={"Seed": seed},
+        options={"Seed": seed} if seed else {},
+        create_not_raise=create_not_raise,
     )
     logger.info(
         "Random player ready",
@@ -93,14 +89,14 @@ if __name__ == "__main__":
         logger.info("Database session created")
 
         logger.info("Creating Stockfish player with ELO 1320")
-        white_player = get_or_create_stockfish_player(
+        white_player = get_stockfish_player(
             session=session,
             elo=1320,
         )
         logger.info("White player created", player_id=white_player.id)
 
         logger.info("Creating random player with seed 2")
-        black_player = get_or_create_random_player(
+        black_player = get_random_player(
             session=session,
             seed=2,
         )
