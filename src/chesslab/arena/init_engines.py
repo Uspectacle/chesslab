@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, Optional
 
 import chess.engine
+import numpy as np
 import structlog
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,28 @@ from chesslab.storage import Player, get_session
 from chesslab.storage.player_tools import get_player_by_attributes
 
 logger = structlog.get_logger()
+
+
+def get_random_player(
+    session: Session,
+    seed: Optional[int] = None,
+    create_not_raise: bool = True,
+) -> Player:
+    logger.debug("Getting or creating random player", seed=seed)
+
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="RandomEngine",
+        expected_elo=300,
+        options={"Seed": seed} if seed else {},
+        create_not_raise=create_not_raise,
+    )
+    logger.info(
+        "Random player ready",
+        player_id=player.id,
+        seed=seed,
+    )
+    return player
 
 
 def stockfish_elo(depth: int) -> int:
@@ -57,26 +80,16 @@ def get_stockfish_player(
     return player
 
 
-def get_random_player(
+def get_stockfish_range(
     session: Session,
-    seed: Optional[int] = None,
-    create_not_raise: bool = True,
-) -> Player:
-    logger.debug("Getting or creating random player", seed=seed)
-
-    player = get_player_by_attributes(
-        session=session,
-        engine_type="RandomEngine",
-        expected_elo=300,
-        options={"Seed": seed} if seed else {},
-        create_not_raise=create_not_raise,
-    )
-    logger.info(
-        "Random player ready",
-        player_id=player.id,
-        seed=seed,
-    )
-    return player
+    min_elo: int = 1320,
+    max_elo: int = 2200,
+    num_step: int = 3,
+) -> list[Player]:
+    return [
+        get_stockfish_player(session=session, elo=elo)
+        for elo in np.linspace(min_elo, max_elo, num_step)
+    ]
 
 
 if __name__ == "__main__":

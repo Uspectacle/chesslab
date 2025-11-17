@@ -6,13 +6,15 @@ Supports concurrent games with configurable limits to avoid resource exhaustion.
 
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 
 import structlog
 from sqlalchemy.orm import Session
 
 from chesslab.arena.init_engines import (
+    Player,
     get_random_player,
+    get_stockfish_range,
 )
 from chesslab.arena.run_game import run_game
 from chesslab.storage import (
@@ -75,16 +77,6 @@ def get_or_create_match(
     Returns:
         List of Game objects
     """
-    logger.info(
-        "Setting up match",
-        white_player_id=white_player_id,
-        black_player_id=black_player_id,
-        num_games=num_games,
-        alternate_colors=alternate_color,
-        remove_existing=remove_existing,
-        get_existing=get_existing,
-    )
-
     games: List[Game] = []
 
     if alternate_color and white_player_id != black_player_id:
@@ -124,7 +116,44 @@ def get_or_create_match(
         white_player_id=white_player_id,
         black_player_id=black_player_id,
         total_games=len(games),
+        alternate_colors=alternate_color,
+        remove_existing=remove_existing,
+        get_existing=get_existing,
     )
+    return games
+
+
+def run_range(
+    session: Session,
+    players: List[Player],
+    opponents: Optional[List[Player]] = None,
+    num_games: int = 10,
+    remove_existing: bool = True,
+    get_existing: bool = True,
+    alternate_color: bool = True,
+    max_concurrent: int = 8,
+) -> List[Game]:
+    games: List[Game] = []
+
+    if not opponents:
+        opponents = get_stockfish_range(session)
+
+    for opponent in opponents:
+        for player in players:
+            games += get_or_create_match(
+                session=session,
+                white_player_id=player.id,
+                black_player_id=opponent.id,
+                num_games=num_games,
+                remove_existing=remove_existing,
+                get_existing=get_existing,
+                alternate_color=alternate_color,
+            )
+
+    asyncio.run(
+        run_multiple_games(session=session, games=games, max_concurrent=max_concurrent)
+    )
+
     return games
 
 
@@ -135,17 +164,10 @@ if __name__ == "__main__":
     logger.info("Starting match runner script")
 
     with get_session() as session:
-        white_player = get_random_player(session=session)
-        # white_player = get_stockfish_player(session=session)
-        black_player = get_random_player(session=session)
-
-        games = get_or_create_match(
+        games = run_range(
             session=session,
-            white_player_id=white_player.id,
-            black_player_id=black_player.id,
-            num_games=10,
+            players=[get_random_player(session=session)],
         )
 
-        asyncio.run(run_multiple_games(session=session, games=games))
         for game in games:
             print(game.result)

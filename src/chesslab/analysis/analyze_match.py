@@ -1,7 +1,7 @@
 """Chess Game manager using Player instances."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import structlog
@@ -31,20 +31,26 @@ class MatchAnalysis:
         player_1: Player,
         player_2: Player,
         player_1_only_white: bool = False,
+        num_games: Optional[int] = None,
     ) -> None:
         self.player_1 = player_1
         self.player_2 = player_2
         self.evaluator = evaluator
+        self.player_1_only_white = player_1_only_white or player_1.id == player_2.id
 
-        if player_1_only_white:
+        if self.player_1_only_white:
             games = get_games_by_players(
                 session=session,
                 white_player_id=player_1.id,
                 black_player_id=player_2.id,
+                num_games=num_games,
             )
         else:
             games = get_head_to_head_games(
-                session=session, player1_id=player_1.id, player2_id=player_2.id
+                session=session,
+                player1_id=player_1.id,
+                player2_id=player_2.id,
+                num_games=num_games,
             )
 
         # Run the games and get results
@@ -61,7 +67,11 @@ class MatchAnalysis:
     def player_1_scores(self) -> List[float]:
         """Return list of player 1 score for each game."""
         return [
-            game_analysis.get_score(self.player_1.id)
+            (
+                game_analysis.white_score
+                if self.player_1_only_white
+                else game_analysis.get_score(self.player_1.id)
+            )
             for game_analysis in self.games_analysis
         ]
 
@@ -69,7 +79,11 @@ class MatchAnalysis:
     def player_2_scores(self) -> List[float]:
         """Return list of player 2 score for each game."""
         return [
-            game_analysis.get_score(self.player_2.id)
+            (
+                game_analysis.black_score
+                if self.player_1_only_white
+                else game_analysis.get_score(self.player_2.id)
+            )
             for game_analysis in self.games_analysis
         ]
 
@@ -97,30 +111,21 @@ class MatchAnalysis:
     def number_of_player_1_win(self) -> int:
         """Number of game won by player 1."""
         return np.sum(
-            [
-                game_analysis.get_score(self.player_1.id) == 1.0
-                for game_analysis in self.games_analysis
-            ]
+            [player_1_score == 1.0 for player_1_score in self.player_1_scores]
         )
 
     @property
     def number_of_player_2_win(self) -> int:
         """Number of game won by player 2."""
         return np.sum(
-            [
-                game_analysis.get_score(self.player_2.id) == 1.0
-                for game_analysis in self.games_analysis
-            ]
+            [player_2_score == 1.0 for player_2_score in self.player_2_scores]
         )
 
     @property
     def number_of_draw(self) -> int:
         """Number of game resulting in a draw."""
         return np.sum(
-            [
-                game_analysis.get_score(self.player_1.id) == 0.5
-                for game_analysis in self.games_analysis
-            ]
+            [player_1_score == 0.5 for player_1_score in self.player_1_scores]
         )
 
     @property
@@ -236,7 +241,11 @@ class MatchAnalysis:
         """Number of time player 1 made a move."""
         return np.sum(
             [
-                game_analysis.get_number_of_move(self.player_1.id)
+                (
+                    game_analysis.number_of_white_move
+                    if self.player_1_only_white
+                    else game_analysis.get_number_of_move(self.player_1.id)
+                )
                 for game_analysis in self.games_analysis
             ]
         )
@@ -246,7 +255,11 @@ class MatchAnalysis:
         """Number of time player 2 made a move."""
         return np.sum(
             [
-                game_analysis.get_number_of_move(self.player_2.id)
+                (
+                    game_analysis.number_of_black_move
+                    if self.player_1_only_white
+                    else game_analysis.get_number_of_move(self.player_2.id)
+                )
                 for game_analysis in self.games_analysis
             ]
         )
@@ -256,7 +269,11 @@ class MatchAnalysis:
         """Return the accumulated centipawn loss of player 1."""
         return np.sum(
             [
-                game_analysis.get_centipawn_loss(self.player_1.id)
+                (
+                    game_analysis.white_centipawn_loss
+                    if self.player_1_only_white
+                    else game_analysis.get_centipawn_loss(self.player_1.id)
+                )
                 for game_analysis in self.games_analysis
             ]
         )
@@ -266,7 +283,11 @@ class MatchAnalysis:
         """Return the accumulated centipawn loss of player 2."""
         return np.sum(
             [
-                game_analysis.get_centipawn_loss(self.player_2.id)
+                (
+                    game_analysis.black_centipawn_loss
+                    if self.player_1_only_white
+                    else game_analysis.get_centipawn_loss(self.player_2.id)
+                )
                 for game_analysis in self.games_analysis
             ]
         )

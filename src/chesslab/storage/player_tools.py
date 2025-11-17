@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 import chess
 import chess.engine
 import structlog
+from sqlalchemy import ColumnElement
 from sqlalchemy.orm import Session
 
 from chesslab.storage.schema import Player
@@ -84,7 +85,12 @@ def get_player_by_attributes(
     return player
 
 
-def list_players(session: Session, engine_type: Optional[str] = None) -> List[Player]:
+def list_players(
+    session: Session,
+    engine_type: Optional[str] = None,
+    min_elo: Optional[int] = None,
+    max_elo: Optional[int] = None,
+) -> List[Player]:
     """List all players, optionally filtered by engine type.
 
     Args:
@@ -98,13 +104,18 @@ def list_players(session: Session, engine_type: Optional[str] = None) -> List[Pl
         "Listing players",
         engine_type_filter=engine_type,
     )
-    query = session.query(Player)
+    filters: List[ColumnElement[bool]] = []
 
     if engine_type:
-        logger.debug("Applying engine type filter", engine_type=engine_type)
-        query = query.filter(Player.engine_type == engine_type)
+        filters.append((Player.engine_type == engine_type))
 
-    players = query.all()
+    if min_elo is not None:
+        filters.append((Player.expected_elo >= min_elo))
+
+    if max_elo is not None:
+        filters.append((Player.expected_elo <= max_elo))
+
+    players = session.query(Player).filter(*filters).all()
     logger.info(
         "Retrieved players list",
         player_count=len(players),

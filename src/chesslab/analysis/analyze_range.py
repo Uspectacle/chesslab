@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import matplotlib
 
@@ -29,7 +29,7 @@ from chesslab.storage import Player, get_session
 logger = structlog.get_logger()
 
 
-class CampaignAnalysis:
+class RangeAnalysis:
     """Manages a series of match between a player and a series of opponents."""
 
     def __init__(
@@ -38,6 +38,7 @@ class CampaignAnalysis:
         evaluator: Evaluator,
         player: Player,
         opponents: List[Player],
+        num_games: Optional[int] = None,
     ) -> None:
         self.player = player
         self.opponents = opponents
@@ -50,6 +51,7 @@ class CampaignAnalysis:
                 evaluator=evaluator,
                 player_1=player,
                 player_2=opponent,
+                num_games=num_games,
             )
             for opponent in self.opponents
         ]
@@ -336,40 +338,30 @@ class CampaignAnalysis:
 
         axes.set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
         plt.tight_layout()
-        png_path = Path(path_folder) / f"campaign_player_{self.player.id}.png"
-        Path(png_path).parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(png_path)  # pyright: ignore[reportUnknownMemberType]
+        plot_path = Path(path_folder) / f"campaign_player_{self.player.id}.png"
+        Path(plot_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(plot_path)  # pyright: ignore[reportUnknownMemberType]
         plt.close()
-
-
-def get_stockfish_range(
-    session: Session,
-    min_elo: int = 1320,
-    max_elo: int = 2200,
-) -> List[Player]:
-    logger.info("Setting up all matchs")
-    stockfish_players = list_players(session=session, engine_type="Stockfish")
-    return [
-        stockfish_player
-        for stockfish_player in stockfish_players
-        if min_elo <= stockfish_player.expected_elo <= max_elo
-    ]
 
 
 if __name__ == "__main__":
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
-    logger.info("Starting Campaign Analysis script")
+    logger.info("Starting Range Analysis script")
 
     with get_session() as session:
         with Evaluator() as evaluator:
             logger.info("Getting players")
             random_player = get_random_player(session=session, create_not_raise=False)
-            opponents = get_stockfish_range(session=session)
+            opponents = list_players(
+                session=session,
+                engine_type="Stockfish",
+                min_elo=1320,
+                max_elo=2200,
+            )
 
-            logger.info("CampaignAnalysis")
-            analysis = CampaignAnalysis(
+            analysis = RangeAnalysis(
                 session=session,
                 evaluator=evaluator,
                 player=random_player,

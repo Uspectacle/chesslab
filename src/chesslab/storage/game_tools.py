@@ -90,15 +90,19 @@ def get_game(session: Session, game_id: int) -> Optional[Game]:
     return game
 
 
-def get_player_games(session: Session, player_id: int, limit: int = 100) -> List[Game]:
-    logger.debug("Fetching player games", player_id=player_id, limit=limit)
+def get_player_games(
+    session: Session,
+    player_id: int,
+    num_games: Optional[int] = None,
+) -> List[Game]:
+    logger.debug("Fetching player games", player_id=player_id, num_games=num_games)
     games = (
         session.query(Game)
         .filter(
             (Game.white_player_id == player_id) | (Game.black_player_id == player_id)
         )
         .order_by(desc(Game.started_at))
-        .limit(limit)
+        .limit(num_games)
         .all()
     )
     logger.info("Retrieved player games", player_id=player_id, game_count=len(games))
@@ -106,7 +110,10 @@ def get_player_games(session: Session, player_id: int, limit: int = 100) -> List
 
 
 def get_head_to_head_games(
-    session: Session, player1_id: int, player2_id: int
+    session: Session,
+    player1_id: int,
+    player2_id: int,
+    num_games: Optional[int] = None,
 ) -> List[Game]:
     games = (
         session.query(Game)
@@ -120,6 +127,7 @@ def get_head_to_head_games(
                 & (Game.black_player_id == player1_id)
             )
         )
+        .limit(num_games)
         .all()
     )
     logger.debug(
@@ -132,24 +140,21 @@ def get_head_to_head_games(
 
 
 def get_games_by_players(
-    session: Session, white_player_id: int, black_player_id: int
+    session: Session,
+    white_player_id: int,
+    black_player_id: int,
+    num_games: Optional[int] = None,
 ) -> List[Game]:
-    logger.debug(
-        "Fetching games by players",
-        white_player_id=white_player_id,
-        black_player_id=black_player_id,
-    )
     games = (
         session.query(Game)
         .filter(
-            (
-                (Game.white_player_id == white_player_id)
-                & (Game.black_player_id == black_player_id)
-            )
+            (Game.white_player_id == white_player_id)
+            & (Game.black_player_id == black_player_id)
         )
+        .limit(num_games)
         .all()
     )
-    logger.info(
+    logger.debug(
         "Retrieved games by players",
         white_player_id=white_player_id,
         black_player_id=black_player_id,
@@ -212,6 +217,7 @@ def get_or_create_games(
             session=session,
             white_player_id=white_player_id,
             black_player_id=black_player_id,
+            num_games=num_games,
         )
 
     while len(games) < num_games:
