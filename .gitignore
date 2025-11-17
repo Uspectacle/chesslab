@@ -11,3 +11,4 @@ wheels/
 
 .env
 src/third_party/stockfish
+temp

@@ -1,117 +1,109 @@
 """Chess Game manager using Player instances."""
 
+import logging
 from pathlib import Path
 from typing import List
 
+import matplotlib
+
+from chesslab.storage.player_tools import list_players
+
+matplotlib.use("Agg")  # To avoid interacting with stockfish
 import matplotlib.pyplot as plt
 import numpy as np
+import structlog
 from matplotlib.axes import Axes
+from sqlalchemy.orm import Session
 
-from chesslab.analysis.analyze_match import Match
-from chesslab.analysis.chesslab_typing import Player
+from chesslab.analysis.analyze_match import MatchAnalysis
 from chesslab.analysis.elo_tools import ensemble_elo_from_scores, expected_score
+from chesslab.analysis.evaluator import Evaluator
 from chesslab.analysis.stat_tools import (
     compute_ensemble_p_value,
     ensemble_mean_score,
     ensemble_standard_error,
 )
+from chesslab.arena.init_engines import get_random_player
+from chesslab.storage import Player, get_session
+
+logger = structlog.get_logger()
 
 
-class Campaign:
+class CampaignAnalysis:
     """Manages a series of match between a player and a series of opponents."""
-
-    player: Player
-    opponents: List[Player]
-    num_round: int
-    max_moves: int
-    result_folder: Path
-    export_csv_log: bool
-    export_pgn: bool
-    verbose: bool
-
-    matches: List[Match]
 
     def __init__(
         self,
+        session: Session,
+        evaluator: Evaluator,
         player: Player,
         opponents: List[Player],
-        fix_player_to_white: bool = False,
-        num_round: int = 1,
-        max_moves: int = 200,
-        result_folder: str | Path = "results",
-        export_csv_log: bool = False,
-        export_pgn: bool = False,
-        verbose: bool = False,
-        export_report: bool = False,
-        export_plot_scores: bool = False,
     ) -> None:
         self.player = player
         self.opponents = opponents
-
-        self.num_round = num_round
-        self.max_moves = max_moves
-        self.result_folder = Path(result_folder)
-        self.export_csv_log = export_csv_log
-        self.export_pgn = export_pgn
-        self.verbose = verbose
+        self.evaluator = evaluator
 
         # Run the games and get results
-        self.matches = [
-            Match(
+        self.matches_analysis = [
+            MatchAnalysis(
+                session=session,
+                evaluator=evaluator,
                 player_1=player,
                 player_2=opponent,
-                fix_player_1_to_white=fix_player_to_white,
-                num_round=num_round,
-                max_moves=max_moves,
-                result_folder=f"{result_folder}/{player}_vs_{opponent}",
-                export_csv_log=export_csv_log,
-                export_pgn=export_pgn,
-                verbose=verbose,
             )
             for opponent in self.opponents
         ]
 
-        if export_report:
-            self.write_report()
-
-        if export_plot_scores:
-            self.plot_scores()
-
     @property
     def opponent_elos(self) -> List[float]:
         """The elo for each opponent."""
-        return [opponent.elo for opponent in self.opponents]
+        return [opponent.expected_elo for opponent in self.opponents]
 
     @property
     def win_ratios(self) -> List[float]:
         """Ratio of game won by the player for each match."""
-        return [match.player_1_win_ratio for match in self.matches]
+        return [
+            match_analysis.player_1_win_ratio
+            for match_analysis in self.matches_analysis
+        ]
 
     @property
     def loss_ratios(self) -> List[float]:
         """Ratio of game lost by the player for each match."""
-        return [match.player_2_win_ratio for match in self.matches]
+        return [
+            match_analysis.player_2_win_ratio
+            for match_analysis in self.matches_analysis
+        ]
 
     @property
     def max_standard_errors(self) -> List[float]:
         """Maximum standard error of the player score for each match."""
-        return [match.max_standard_error_of_player_1 for match in self.matches]
+        return [
+            match_analysis.max_standard_error_of_player_1
+            for match_analysis in self.matches_analysis
+        ]
 
     @property
     def observed_scores(self) -> List[float]:
         """Observed mean scores from each match."""
-        return [match.player_1_mean for match in self.matches]
+        return [
+            match_analysis.player_1_mean for match_analysis in self.matches_analysis
+        ]
 
     @property
     def num_rounds_per_match(self) -> List[int]:
         """Number of rounds in each match."""
-        return [match.num_round for match in self.matches]
+        return [
+            len(match_analysis.games_analysis)
+            for match_analysis in self.matches_analysis
+        ]
 
     @property
     def expected_scores(self) -> List[float]:
         """Expected scores based on player's declared Elo vs each opponent."""
         return [
-            expected_score(self.player.elo, opponent.elo) for opponent in self.opponents
+            expected_score(self.player.expected_elo, opponent.expected_elo)
+            for opponent in self.opponents
         ]
 
     @property
@@ -140,7 +132,7 @@ class Campaign:
     def estimated_scores(self) -> List[float]:
         """Expected scores based on estimated player Elo vs each opponent."""
         return [
-            expected_score(self.estimated_player_elo, opponent.elo)
+            expected_score(self.estimated_player_elo, opponent.expected_elo)
             for opponent in self.opponents
         ]
 
@@ -180,12 +172,22 @@ class Campaign:
     @property
     def number_of_move(self) -> float:
         """Number of time the player made a move."""
-        return np.sum([match.number_of_player_1_move for match in self.matches])
+        return np.sum(
+            [
+                match_analysis.number_of_player_1_move
+                for match_analysis in self.matches_analysis
+            ]
+        )
 
     @property
     def centipawn_loss(self) -> float:
         """Return the accumulated centipawn loss by the player."""
-        return np.sum([match.player_1_centipawn_loss for match in self.matches])
+        return np.sum(
+            [
+                match_analysis.player_1_centipawn_loss
+                for match_analysis in self.matches_analysis
+            ]
+        )
 
     @property
     def average_centipawn_loss(self) -> float:
@@ -198,14 +200,16 @@ class Campaign:
         report_lines: List[str] = []
 
         # Individual match reports
-        for match in self.matches:
-            report_lines.append(match.report)
+        for match_analysis in self.matches_analysis:
+            report_lines.append(match_analysis.report)
 
         # Ensemble statistics
         report_lines.append(f"{'=' * 50}\n")
-        report_lines.append(f"ENSEMBLE STATISTICS FOR {self.player}\n")
+        report_lines.append(
+            f"ENSEMBLE STATISTICS FOR {self.player.engine_type} (ID: {self.player.id})\n"
+        )
         report_lines.append(f"{'=' * 50}\n")
-        report_lines.append(f"Total matches: {len(self.matches)}\n")
+        report_lines.append(f"Total matches: {len(self.matches_analysis)}\n")
         report_lines.append(f"Total games: {sum(self.num_rounds_per_match)}\n")
         report_lines.append("\n")
         report_lines.append(f"Observed mean score: {self.ensemble_observed_mean:.3f}\n")
@@ -219,9 +223,9 @@ class Campaign:
         )
         report_lines.append("\n")
         report_lines.append(f"Estimated player Elo: {int(self.estimated_player_elo)}\n")
-        report_lines.append(f"Declared player Elo: {int(self.player.elo)}\n")
+        report_lines.append(f"Declared player Elo: {int(self.player.expected_elo)}\n")
         report_lines.append(
-            f"Elo difference: {int(self.estimated_player_elo - self.player.elo):+d}\n"
+            f"Elo difference: {int(self.estimated_player_elo - self.player.expected_elo):+d}\n"
         )
         report_lines.append(
             f"Estimated mean score: {self.ensemble_estimated_mean:.3f}\n"
@@ -234,14 +238,6 @@ class Campaign:
         )
 
         return "".join(report_lines)
-
-    def write_report(self) -> None:
-        """Write a campaign textual report of all matches."""
-        report_path = f"{self.result_folder}/campaign_report.txt"
-
-        with open(report_path, "w", encoding="utf-8") as f:
-            f.write(f"=== {self.player} Campaign Report ===\n\n")
-            f.write(self.report)
 
     def plot_score_on_ax(self, ax: Axes) -> None:
         """Plot statistics for the player."""
@@ -289,7 +285,7 @@ class Campaign:
         # Plot expected curve based on declared Elo
         expected_y = np.array(
             [
-                expected_score(self.player.elo, opponent_elo)
+                expected_score(self.player.expected_elo, opponent_elo)
                 for opponent_elo in expected_x
             ]
         )
@@ -300,7 +296,7 @@ class Campaign:
             color="#ff0084",
             zorder=3,
             label=(
-                f"Expected (Elo={int(self.player.elo)}, "
+                f"Expected (Elo={int(self.player.expected_elo)}, "
                 f"p={self.ensemble_p_value_of_expectation:.3f})"
             ),
         )
@@ -325,14 +321,14 @@ class Campaign:
         )
 
         # ----- STYLE -----
-        ax.set_title(str(self.player))  # pyright: ignore[reportUnknownMemberType]
+        ax.set_title(f"{self.player.engine_type} (ID: {self.player.id})")  # pyright: ignore[reportUnknownMemberType]
         ax.set_ylabel("Mean score")  # pyright: ignore[reportUnknownMemberType]
         ax.set_ylim(0, 1)
         ax.set_xlim(min(self.opponent_elos) - 50, max(self.opponent_elos) + 50)
         ax.grid(alpha=0.3, zorder=0)  # pyright: ignore[reportUnknownMemberType]
         ax.legend()  # pyright: ignore[reportUnknownMemberType]
 
-    def plot_scores(self) -> None:
+    def plot_scores(self, path_folder: Path | str) -> None:
         """Plot statistics for one player."""
         _fig, axes = plt.subplots(1, 1, figsize=(10, 4), sharex=True)  # pyright: ignore[reportUnknownMemberType]
 
@@ -340,6 +336,46 @@ class Campaign:
 
         axes.set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
         plt.tight_layout()
-        png_path = f"{self.result_folder}/campaign_scores.png"
+        png_path = Path(path_folder) / f"campaign_player_{self.player.id}.png"
+        Path(png_path).parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(png_path)  # pyright: ignore[reportUnknownMemberType]
         plt.close()
+
+
+def get_stockfish_range(
+    session: Session,
+    min_elo: int = 1320,
+    max_elo: int = 2200,
+) -> List[Player]:
+    logger.info("Setting up all matchs")
+    stockfish_players = list_players(session=session, engine_type="Stockfish")
+    return [
+        stockfish_player
+        for stockfish_player in stockfish_players
+        if min_elo <= stockfish_player.expected_elo <= max_elo
+    ]
+
+
+if __name__ == "__main__":
+    structlog.configure(
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    )
+    logger.info("Starting Campaign Analysis script")
+
+    with get_session() as session:
+        with Evaluator() as evaluator:
+            logger.info("Getting players")
+            random_player = get_random_player(session=session, create_not_raise=False)
+            opponents = get_stockfish_range(session=session)
+
+            logger.info("CampaignAnalysis")
+            analysis = CampaignAnalysis(
+                session=session,
+                evaluator=evaluator,
+                player=random_player,
+                opponents=opponents,
+            )
+
+            analysis.plot_scores("temp")
+
+            print(analysis.report)

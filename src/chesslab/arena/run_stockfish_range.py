@@ -21,7 +21,7 @@ def run_stockfish_range(
     player: Player,
     min_elo: int = 1320,
     max_elo: int = 2200,
-    num_step: int = 5,
+    num_step: int = 3,
     num_games: int = 10,
     remove_existing: bool = True,
     get_existing: bool = True,
@@ -54,7 +54,7 @@ def run_stockfish_range(
 if __name__ == "__main__":
     logger.info("Starting match runner script")
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
 
     with get_session() as session:

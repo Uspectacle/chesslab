@@ -56,13 +56,6 @@ async def run_game(
             move = move_dict.get(ply_index)
 
             if not move:
-                logger.info(
-                    "Creating new move",
-                    game_id=game.id,
-                    ply_index=ply_index,
-                    move_number=board.fullmove_number,
-                    is_white=(board.turn == chess.WHITE),
-                )
                 move = create_move(
                     session=session,
                     game_id=game.id,

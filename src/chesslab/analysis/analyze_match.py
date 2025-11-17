@@ -319,11 +319,13 @@ if __name__ == "__main__":
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
-    logger.info("Starting match runner script")
+    logger.info("Starting Matc Analysis script")
 
     with get_session() as session:
         with Evaluator() as evaluator:
-            stockfish = get_stockfish_player(session=session, create_not_raise=False)
+            stockfish = get_stockfish_player(
+                session=session, elo=1320, create_not_raise=False
+            )
 
             logger.info("Creating random player")
             random_player = get_random_player(session=session, create_not_raise=False)

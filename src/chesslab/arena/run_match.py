@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 
 from chesslab.arena.init_engines import (
     get_random_player,
-    get_stockfish_player,
 )
 from chesslab.arena.run_game import run_game
 from chesslab.storage import (
@@ -131,13 +130,13 @@ def get_or_create_match(
 
 if __name__ == "__main__":
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
     logger.info("Starting match runner script")
 
     with get_session() as session:
-        # white_player = get_random_player(session=session)
-        white_player = get_stockfish_player(session=session)
+        white_player = get_random_player(session=session)
+        # white_player = get_stockfish_player(session=session)
         black_player = get_random_player(session=session)
 
         games = get_or_create_match(
