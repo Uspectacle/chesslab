@@ -40,7 +40,9 @@ def get_database_url() -> str:
 
 
 def get_stockfish_url() -> str | List[str]:
-    return os.getenv("STOCKFISH_URL", f"{SRC_DIR}/third_party/stockfish/src/stockfish")
+    return os.getenv(
+        "STOCKFISH_URL", str(SRC_DIR / "third_party/stockfish/src/stockfish")
+    )
 
 
 if __name__ == "__main__":
