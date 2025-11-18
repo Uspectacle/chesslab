@@ -11,7 +11,7 @@ from chesslab.analysis.analyze_game import GameAnalysis
 from chesslab.analysis.elo_tools import elo_from_mean_score, expected_score
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.analysis.stat_tools import compute_p_value, standard_error_of_proportion
-from chesslab.arena.init_engines import (
+from chesslab.engines.init_engines import (
     get_random_player,
     get_stockfish_player,
 )

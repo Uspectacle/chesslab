@@ -62,6 +62,61 @@ async def get_protocol(player: Player) -> chess.engine.Protocol:
     return protocol
 
 
+async def get_uci_move(
+    board: chess.Board, player: Player, protocol: Optional[chess.engine.Protocol] = None
+) -> str:
+    """Play a move by ID asynchronously, creating its own database session.
+
+    Args:
+        session: Database session
+        move: Move object to play
+
+    Returns:
+        Updated move object with uci_move set
+    """
+    close_protocol = False
+
+    if not protocol:
+        protocol = await get_protocol(player)
+        close_protocol = True
+    try:
+        logger.debug(
+            "Starting engine calculation", player_id=player.id, board=board.fen()
+        )
+
+        result = await protocol.play(board, limit=chess.engine.Limit(**player.limit))
+
+        if not result.move:
+            raise ValueError("Engine failed to find move")
+
+        uci_move = result.move.uci()
+
+        logger.debug(
+            "Engine move calculated",
+            player_id=player.id,
+            board=board.fen(),
+            uci_move=uci_move,
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error playing move",
+            player_id=player.id,
+            board=board.fen(),
+            error=str(e),
+            exc_info=True,
+        )
+        raise
+    finally:
+        if close_protocol:
+            try:
+                await protocol.quit()
+            except Exception as e:
+                logger.warning("Error closing engine", error=str(e))
+
+    return uci_move
+
+
 async def play_move(
     session: Session, move: Move, protocol: Optional[chess.engine.Protocol] = None
 ) -> Move:
@@ -85,54 +140,17 @@ async def play_move(
     else:
         player = move.game.black_player
 
-    logger.info("Playing move", move_id=move.id)
     board = chess.Board(move.fen_before)
 
-    close_protocol = False
+    move.uci_move = await get_uci_move(board=board, player=player, protocol=protocol)
+    move.played_at = datetime.now()
+    session.commit()
 
-    if not protocol:
-        protocol = await get_protocol(player)
-        close_protocol = True
-    try:
-        logger.debug(
-            "Starting engine calculation", move_id=move.id, fen=move.fen_before
-        )
-
-        result = await protocol.play(board, limit=chess.engine.Limit(**player.limit))
-
-        if not result.move:
-            raise ValueError("Engine failed to find move")
-
-        logger.debug(
-            "Engine move calculated",
-            move_id=move.id,
-            uci_move=result.move.uci(),
-        )
-
-        move.played_at = datetime.now()
-        move.uci_move = result.move.uci()
-        session.commit()
-
-        logger.info(
-            "Move played successfully",
-            move_id=move.id,
-            game_id=move.game_id,
-            uci_move=result.move.uci(),
-        )
-
-    except Exception as e:
-        logger.error(
-            "Error playing move",
-            move_id=move.id,
-            error=str(e),
-            exc_info=True,
-        )
-        raise
-    finally:
-        if close_protocol:
-            try:
-                await protocol.quit()
-            except Exception as e:
-                logger.warning("Error closing engine", error=str(e))
+    logger.info(
+        "Move played",
+        move_id=move.id,
+        game_id=move.game_id,
+        uci_move=move.uci_move,
+    )
 
     return move

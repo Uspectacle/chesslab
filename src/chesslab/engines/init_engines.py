@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import chess.engine
 import numpy as np
@@ -31,6 +31,46 @@ def get_random_player(
         player_id=player.id,
         seed=seed,
     )
+    return player
+
+
+def get_voting_player(
+    session: Session,
+    players: List[Player],
+    aggregator: str = "majority",
+    max_concurrent: int = 1,
+    create_not_raise: bool = True,
+) -> Player:
+    player_ids = ",".join([str(player.id) for player in players])
+
+    logger.debug(
+        "Getting or creating voting player",
+        player_ids=player_ids,
+        max_concurrent=max_concurrent,
+    )
+
+    expected_elos = [player.expected_elo for player in players]
+    # max_elo = max(expected_elos)
+    mean_elo = sum(expected_elos) / len(expected_elos)
+
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="VotingEngine",
+        expected_elo=int(mean_elo),
+        options={
+            "Player_ids": player_ids,
+            "Max_concurrent": max_concurrent,
+            "Aggregator": aggregator,
+        },
+        create_not_raise=create_not_raise,
+    )
+    logger.info(
+        "Random player ready",
+        player_id=player.id,
+        player_ids=player_ids,
+        max_concurrent=max_concurrent,
+    )
+
     return player
 
 
@@ -90,6 +130,22 @@ def get_stockfish_range(
         get_stockfish_player(session=session, elo=elo)
         for elo in np.linspace(min_elo, max_elo, num_step)
     ]
+
+
+def get_stockfish_gaussian(
+    session: Session,
+    mean: float = 1700,
+    std_dev: float = 200,
+    num_samples: int = 3,
+    min_elo: int = 1320,
+    max_elo: int = 2200,
+    seed: Optional[int] = None,
+) -> list[Player]:
+    rng = np.random.default_rng(seed) if seed else np.random
+    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
+    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
+    sampled_elos = sampled_elos.astype(int)
+    return [get_stockfish_player(session=session, elo=elo) for elo in sampled_elos]
 
 
 if __name__ == "__main__":

@@ -1,0 +1,93 @@
+--------------------------------------------------
+Match: VotingEngine (ID: 45) vs Stockfish (ID: 2)
+--------------------------------------------------
+Games played: 3
+Score: 2.000 win - 1.000 draw - 0.000 loose
+
+For Player 1: 
+Average centipawn loss: 1000.457399103139
+Mean observed score: 0.833
+Expected ELO: 1845
+Expected score: 0.954
+P-value of expectation: 0.42666
+Estimated ELO: 1599
+Estimated score: 0.833
+P-value of estimation: 1.00000
+
+For Player 2: 
+Average centipawn loss: 1363.7522522522522
+Mean observed score: 0.167
+Expected ELO: 1320
+Expected score: 0.046
+P-value of expectation: 0.42666
+Estimated ELO: 1565
+Estimated score: 0.167
+P-value of estimation: 1.00000
+--------------------------------------------------
+Match: VotingEngine (ID: 45) vs Stockfish (ID: 3)
+--------------------------------------------------
+Games played: 3
+Score: 2.000 win - 0.000 draw - 1.000 loose
+
+For Player 1: 
+Average centipawn loss: 470.24354243542433
+Mean observed score: 0.667
+Expected ELO: 1845
+Expected score: 0.620
+P-value of expectation: 0.88292
+Estimated ELO: 1880
+Estimated score: 0.667
+P-value of estimation: 1.00000
+
+For Player 2: 
+Average centipawn loss: 615.7074074074075
+Mean observed score: 0.333
+Expected ELO: 1760
+Expected score: 0.380
+P-value of expectation: 0.88292
+Estimated ELO: 1724
+Estimated score: 0.333
+P-value of estimation: 1.00000
+--------------------------------------------------
+Match: VotingEngine (ID: 45) vs Stockfish (ID: 4)
+--------------------------------------------------
+Games played: 3
+Score: 2.000 win - 0.000 draw - 1.000 loose
+
+For Player 1: 
+Average centipawn loss: 279.5654761904762
+Mean observed score: 0.667
+Expected ELO: 1845
+Expected score: 0.115
+P-value of expectation: 0.09546
+Estimated ELO: 2320
+Estimated score: 0.667
+P-value of estimation: 1.00000
+
+For Player 2: 
+Average centipawn loss: 174.65868263473052
+Mean observed score: 0.333
+Expected ELO: 2200
+Expected score: 0.885
+P-value of expectation: 0.09546
+Estimated ELO: 1724
+Estimated score: 0.333
+P-value of estimation: 1.00000
+==================================================
+ENSEMBLE STATISTICS FOR VotingEngine (ID: 45)
+==================================================
+Total matches: 3
+Total games: 9
+
+Observed mean score: 0.722
+Average centipawn loss: 660.2930513595167
+Expected mean score: 0.563
+Expected standard error: 0.11886
+P-value of expectation: 0.22821
+
+Estimated player Elo: 2276
+Declared player Elo: 1845
+Elo difference: +431
+Estimated mean score: 0.852
+Estimated standard error: 0.10336
+P-value of estimation: 0.25589

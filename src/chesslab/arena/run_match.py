@@ -6,17 +6,18 @@ Supports concurrent games with configurable limits to avoid resource exhaustion.
 
 import asyncio
 import logging
+import random
 from typing import List, Optional
 
 import structlog
 from sqlalchemy.orm import Session
 
-from chesslab.arena.init_engines import (
+from chesslab.arena.run_game import run_game
+from chesslab.engines.init_engines import (
     Player,
     get_random_player,
     get_stockfish_range,
 )
-from chesslab.arena.run_game import run_game
 from chesslab.storage import (
     Game,
     delete_moves_not_played,
@@ -35,6 +36,7 @@ async def run_multiple_games(
 
     games_to_complete = [game for game in games if not game.result]
     logger.info("Games to complete", count=len(games_to_complete))
+    random.shuffle(games_to_complete)
 
     for game in games_to_complete:
         delete_moves_not_played(session=session, game=game)

@@ -24,7 +24,7 @@ def create_move(
     fen_before: str,
     uci_move: Optional[str] = None,
 ) -> Move:
-    logger.info(
+    logger.debug(
         "Creating move",
         game_id=game_id,
         ply_index=ply_index,

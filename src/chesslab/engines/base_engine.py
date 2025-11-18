@@ -61,14 +61,14 @@ class BaseEngine(ABC):
             self._started = True
             logger.debug("Engine started", name=self.name)
 
-    def stop(self) -> None:
+    def quit(self) -> None:
         """Clean up engine resources and terminate any subprocesses.
 
         Should be called when the engine is no longer needed.
         """
         if self._started:
             self._started = False
-            logger.debug("Engine stopped", name=self.name)
+            logger.debug("Engine closed", name=self.name)
 
     @abstractmethod
     def bestmove(self) -> str:
@@ -289,7 +289,7 @@ class BaseEngine(ABC):
                     self.setoption(args)
 
                 elif command == "quit":
-                    self.stop()
+                    self.quit()
                     break
 
                 else:

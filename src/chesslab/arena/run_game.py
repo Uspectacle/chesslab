@@ -8,11 +8,11 @@ import chess.engine
 import structlog
 from sqlalchemy.orm import Session
 
-from chesslab.arena.init_engines import (
+from chesslab.engines.init_engines import (
     get_random_player,
     get_stockfish_player,
 )
-from chesslab.arena.play_move import get_protocol, play_move
+from chesslab.engines.storage_tools import get_protocol, play_move
 from chesslab.storage import (
     Game,
     create_move,

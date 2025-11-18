@@ -23,7 +23,7 @@ from chesslab.analysis.stat_tools import (
     ensemble_mean_score,
     ensemble_standard_error,
 )
-from chesslab.arena.init_engines import get_random_player
+from chesslab.engines.init_engines import get_random_player
 from chesslab.storage import Player, get_session
 
 logger = structlog.get_logger()
