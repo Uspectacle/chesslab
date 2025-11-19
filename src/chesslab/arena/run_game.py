@@ -16,6 +16,7 @@ from chesslab.engines.storage_tools import get_protocol, play_move
 from chesslab.storage import (
     Game,
     create_move,
+    delete_moves_not_played,
     get_move_dict,
     get_session,
 )
@@ -34,6 +35,10 @@ async def run_game(
     logger.info("Playing game", game_id=game.id)
 
     board = get_board(game)
+
+    delete_moves_not_played(session=session, game=game)
+
+    session.refresh(game)
 
     if board.is_game_over():
         logger.info("Game already over", game_id=game.id, result=board.result())

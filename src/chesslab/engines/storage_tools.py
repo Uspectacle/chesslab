@@ -21,7 +21,7 @@ async def get_protocol(player: Player) -> chess.engine.Protocol:
     Returns:
         An async chess engine instance
     """
-    logger.info(
+    logger.debug(
         "Getting engine for player",
         player_id=player.id,
         engine_type=player.engine_type,

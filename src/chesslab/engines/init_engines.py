@@ -50,13 +50,19 @@ def get_voting_player(
     )
 
     expected_elos = [player.expected_elo for player in players]
-    # max_elo = max(expected_elos)
     mean_elo = sum(expected_elos) / len(expected_elos)
+
+    if aggregator == "top_elo_dictator":
+        expected_elo = max(expected_elos)
+    elif aggregator == "bottom_elo_dictator":
+        expected_elo = min(expected_elos)
+    else:
+        expected_elo = mean_elo
 
     player = get_player_by_attributes(
         session=session,
         engine_type="VotingEngine",
-        expected_elo=int(mean_elo),
+        expected_elo=int(expected_elo),
         options={
             "Player_ids": player_ids,
             "Max_concurrent": max_concurrent,
@@ -65,7 +71,7 @@ def get_voting_player(
         create_not_raise=create_not_raise,
     )
     logger.info(
-        "Random player ready",
+        "Voting player ready",
         player_id=player.id,
         player_ids=player_ids,
         max_concurrent=max_concurrent,

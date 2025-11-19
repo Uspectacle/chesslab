@@ -20,7 +20,6 @@ from chesslab.engines.init_engines import (
 )
 from chesslab.storage import (
     Game,
-    delete_moves_not_played,
     get_or_create_games,
     get_session,
 )
@@ -37,9 +36,6 @@ async def run_multiple_games(
     games_to_complete = [game for game in games if not game.result]
     logger.info("Games to complete", count=len(games_to_complete))
     random.shuffle(games_to_complete)
-
-    for game in games_to_complete:
-        delete_moves_not_played(session=session, game=game)
 
     semaphore = asyncio.Semaphore(max_concurrent)
 

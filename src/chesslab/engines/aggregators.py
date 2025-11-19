@@ -39,6 +39,26 @@ def top_elo_dictator(
     return vote
 
 
+def bottom_elo_dictator(
+    votes: List[str], players: List[Player], board: chess.Board
+) -> str:
+    vote, _dictator = min(
+        zip(votes, players), key=lambda vote_player: vote_player[1].expected_elo
+    )
+
+    return vote
+
+
+def median_elo_dictator(
+    votes: List[str], players: List[Player], board: chess.Board
+) -> str:
+    vote, _dictator = sorted(
+        zip(votes, players), key=lambda vote_player: vote_player[1].expected_elo
+    )[len(players) // 2]
+
+    return vote
+
+
 def rotating_dictator(
     votes: List[str], players: List[Player], board: chess.Board
 ) -> str:
@@ -74,6 +94,8 @@ AGGREGATORS: Dict[str, Aggregator] = {
     "minority": minority,
     "randomized": randomized,
     "top_elo_dictator": top_elo_dictator,
+    "bottom_elo_dictator": bottom_elo_dictator,
+    "median_elo_dictator": median_elo_dictator,
     "rotating_dictator": rotating_dictator,
     "elo_weight": elo_weight,
     "contrarian": contrarian,

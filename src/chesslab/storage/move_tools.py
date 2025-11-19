@@ -86,7 +86,10 @@ def delete_moves_not_played(session: Session, game: Game) -> None:
     logger.debug("Deleting moves not played", game_id=game.id)
     moves = (
         session.query(Move)
-        .filter((Move.game_id == game.id) & (not Move.uci_move))
+        .filter(
+            (Move.game_id == game.id)
+            & ((Move.uci_move == None) | (Move.uci_move == ""))  # noqa: E711
+        )
         .all()
     )
 

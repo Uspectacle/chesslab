@@ -6,6 +6,36 @@ from typing import List
 from scipy import stats
 
 
+def estimate_gaussian_std(
+    values: list[int] | list[float], unbiased: bool = False
+) -> float:
+    """
+    Estimate the standard deviation of a Gaussian distribution
+    that generated the given sample of integer values.
+
+    :param values: list of ints
+    :param unbiased: if True, use the unbiased estimator (n-1).
+                     if False, use MLE (divide by n)
+    :return: estimated standard deviation (float)
+    """
+    n = len(values)
+
+    if n < 2:
+        raise ValueError(
+            "At least two values are needed to estimate standard deviation."
+        )
+
+    mean = sum(values) / n
+    variance = sum((x - mean) ** 2 for x in values)
+
+    if unbiased:
+        variance /= n - 1
+    else:
+        variance /= n  # MLE
+
+    return math.sqrt(variance)
+
+
 def standard_error_of_proportion(
     proportion: float,
     num_round: int,

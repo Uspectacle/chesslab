@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 from chesslab.analysis.analyze_range import RangeAnalysis
 from chesslab.analysis.evaluator import Evaluator
+from chesslab.analysis.stat_tools import estimate_gaussian_std
 from chesslab.arena.run_match import run_range
 from chesslab.engines.init_engines import (
     get_stockfish_gaussian,
@@ -23,15 +24,36 @@ if __name__ == "__main__":
     folder.mkdir(parents=True, exist_ok=True)
 
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
     )
 
-    num_games = 10
+    num_games = 20
+    mean = 1600
+    std_dev = 200
+    seed = 49
+    num_samples = 10
 
     with get_session() as session:
         crowd = get_stockfish_gaussian(
-            session=session, mean=1600, std_dev=200, num_samples=10, seed=49
+            session=session,
+            mean=mean,
+            std_dev=std_dev,
+            num_samples=num_samples,
+            seed=seed,
         )
+
+        crowd_path = folder / "crowd.txt"
+        expected_elos = [player.expected_elo for player in crowd]
+        expected_elos.sort()
+        true_mean = int(sum(expected_elos) / len(expected_elos))
+        true_std = int(estimate_gaussian_std(expected_elos))
+        report = f"[seed={seed}] Stockfish Gaussian {true_mean} (+/- {true_std}) ELO x {num_samples}\n\n"
+        report += ", ".join([str(expected_elo) for expected_elo in expected_elos])
+        with open(crowd_path, "w", encoding="utf-8") as f:
+            f.write(report)
+
+            logger.info(f"Crowd explanation at {crowd_path}")
+
         players = [
             get_voting_player(session=session, players=crowd, aggregator="randomized"),
             get_voting_player(
