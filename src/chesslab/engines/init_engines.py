@@ -34,6 +34,61 @@ def get_random_player(
     return player
 
 
+def get_llm_player(
+    session: Session,
+    model_name: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+    user_prompt: Optional[str] = None,
+    parser: Optional[str] = None,
+    quantization: Optional[str] = None,
+    max_tokens: Optional[int] = None,
+    temperature: Optional[float] = None,
+    max_retries: Optional[int] = None,
+    continuous_conversation: Optional[bool] = None,
+    create_not_raise: bool = True,
+) -> Player:
+    logger.debug("Getting or creating LLM player", model_name=model_name)
+    options: dict[str, Any] = {}
+
+    if model_name is not None:
+        options["Model"] = model_name
+
+    if system_prompt is not None:
+        options["System_Prompt"] = system_prompt
+
+    if user_prompt is not None:
+        options["User_Prompt"] = user_prompt
+
+    if parser is not None:
+        options["Parser"] = parser
+
+    if quantization is not None:
+        options["Quantization"] = quantization
+
+    if max_tokens is not None:
+        options["Max_Tokens"] = max_tokens
+
+    if temperature is not None:
+        options["Temperature"] = temperature
+
+    if max_retries is not None:
+        options["Max_Retries"] = max_retries
+
+    if continuous_conversation is not None:
+        options["Continuous_Conversation"] = continuous_conversation
+
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="LlmEngine",
+        expected_elo=300,
+        options=options,
+        create_not_raise=create_not_raise,
+    )
+    logger.info("LLM player ready", player_id=player.id)
+
+    return player
+
+
 def get_voting_player(
     session: Session,
     players: List[Player],

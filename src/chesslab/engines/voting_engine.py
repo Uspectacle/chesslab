@@ -5,9 +5,9 @@ from typing import Dict, List
 import chess
 import structlog
 
-from chesslab.engines.aggregators import AGGREGATORS, Aggregator
 from chesslab.engines.base_engine import BaseEngine
-from chesslab.engines.options import OptionCombo, OptionSpin, OptionString
+from chesslab.engines.options.aggregators import AGGREGATORS, Aggregator
+from chesslab.engines.options.options import OptionCombo, OptionSpin, OptionString
 from chesslab.engines.storage_tools import get_uci_move
 from chesslab.storage import Player, get_session
 from chesslab.storage.player_tools import get_player_by_id

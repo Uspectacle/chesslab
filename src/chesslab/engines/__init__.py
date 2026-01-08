@@ -10,6 +10,7 @@ engine_commands: Dict[str, List[str] | str] = {
     "RandomEngine": [sys.executable, str(ENGINES_DIR / "random_engine.py")],
     "Stockfish": get_stockfish_url(),
     "VotingEngine": [sys.executable, str(ENGINES_DIR / "voting_engine.py")],
+    "LlmEngine": [sys.executable, str(ENGINES_DIR / "llm_engine.py")],
 }
 
 __all__ = ["engine_commands"]

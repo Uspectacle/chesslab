@@ -1,0 +1,93 @@
+--------------------------------------------------
+Match: LlmEngine (ID: 58) vs Stockfish (ID: 2)
+--------------------------------------------------
+Games played: 3
+Score: 0.000 win - 0.000 draw - 3.000 loose
+
+For Player 1: 
+Average centipawn loss: 1837.8333333333333
+Mean observed score: 0.000
+Expected ELO: 300
+Expected score: 0.003
+P-value of expectation: 0.93512
+Estimated ELO: 250
+Estimated score: 0.002
+P-value of estimation: 0.94378
+
+For Player 2: 
+Average centipawn loss: 920.5522388059702
+Mean observed score: 1.000
+Expected ELO: 1320
+Expected score: 0.997
+P-value of expectation: 0.93512
+Estimated ELO: 3000
+Estimated score: 1.000
+P-value of estimation: 0.99948
+--------------------------------------------------
+Match: LlmEngine (ID: 58) vs Stockfish (ID: 3)
+--------------------------------------------------
+Games played: 3
+Score: 0.000 win - 0.000 draw - 3.000 loose
+
+For Player 1: 
+Average centipawn loss: 1168.3521126760563
+Mean observed score: 0.000
+Expected ELO: 300
+Expected score: 0.000
+P-value of expectation: 0.98168
+Estimated ELO: 250
+Estimated score: 0.000
+P-value of estimation: 0.98413
+
+For Player 2: 
+Average centipawn loss: 318.6111111111111
+Mean observed score: 1.000
+Expected ELO: 1760
+Expected score: 1.000
+P-value of expectation: 0.98168
+Estimated ELO: 3000
+Estimated score: 1.000
+P-value of estimation: 0.99948
+--------------------------------------------------
+Match: LlmEngine (ID: 58) vs Stockfish (ID: 4)
+--------------------------------------------------
+Games played: 3
+Score: 0.000 win - 0.000 draw - 3.000 loose
+
+For Player 1: 
+Average centipawn loss: 1096.357142857143
+Mean observed score: 0.000
+Expected ELO: 300
+Expected score: 0.000
+P-value of expectation: 0.99484
+Estimated ELO: 250
+Estimated score: 0.000
+P-value of estimation: 0.99553
+
+For Player 2: 
+Average centipawn loss: 29.0
+Mean observed score: 1.000
+Expected ELO: 2200
+Expected score: 1.000
+P-value of expectation: 0.99484
+Estimated ELO: 3000
+Estimated score: 1.000
+P-value of estimation: 0.99948
+==================================================
+ENSEMBLE STATISTICS FOR LlmEngine (ID: 58)
+==================================================
+Total matches: 3
+Total games: 9
+
+Observed mean score: 0.000
+Average centipawn loss: 1374.580310880829
+Expected mean score: 0.001
+Expected standard error: 0.01062
+P-value of expectation: 0.92679
+
+Estimated player Elo: 250
+Declared player Elo: 300
+Elo difference: -49
+Estimated mean score: 0.001
+Estimated standard error: 0.00920
+P-value of estimation: 0.93656

@@ -9,7 +9,7 @@ from typing import List, Optional
 import chess
 import structlog
 
-from chesslab.engines.options import Option
+from chesslab.engines.options.options import Option
 
 logger = structlog.get_logger()
 

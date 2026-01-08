@@ -11,7 +11,7 @@ from typing import Optional
 import structlog
 
 from chesslab.engines.base_engine import BaseEngine
-from chesslab.engines.options import OptionSpin
+from chesslab.engines.options.options import OptionSpin
 
 logger = structlog.get_logger(
     level=logging.DEBUG,
