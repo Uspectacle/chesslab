@@ -11,4 +11,5 @@ wheels/
 
 .env
 src/third_party/stockfish
+src/third_party/maia
 temp

@@ -1,0 +1,85 @@
+import logging
+from pathlib import Path
+
+import numpy as np
+import structlog
+from matplotlib import pyplot as plt
+
+from chesslab.analysis.analyze_range import RangeAnalysis
+from chesslab.analysis.evaluator import Evaluator
+from chesslab.arena.run_match import run_range
+from chesslab.engines.init_engines import get_maia_player, get_stockfish_range
+from chesslab.storage import get_session
+
+logger = structlog.get_logger()
+
+
+if __name__ == "__main__":
+    logger.info("Starting verify maia script")
+    folder = Path(__file__).parent / "results/verify_maia"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    structlog.configure(
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    )
+
+    with get_session() as session:
+        players = [
+            get_maia_player(session=session, elo=elo)
+            for elo in np.linspace(1100, 1900, 3)
+        ]
+
+        opponents = get_stockfish_range(
+            session=session, min_elo=1320, max_elo=2200, num_step=3
+        )
+
+        run_range(
+            session=session,
+            players=players,
+            opponents=opponents,
+            num_games=10,
+            remove_existing=False,
+            get_existing=True,
+            alternate_color=True,
+        )
+
+        with Evaluator() as evaluator:
+            logger.info("Start analyse")
+            ranges_analysis = [
+                RangeAnalysis(
+                    session=session,
+                    evaluator=evaluator,
+                    player=player,
+                    opponents=opponents,
+                    num_games=10,
+                )
+                for player in players
+            ]
+
+            for range_analysis in ranges_analysis:
+                range_analysis.report
+                report_path = folder / f"player_{range_analysis.player.id}.txt"
+
+                with open(report_path, "w", encoding="utf-8") as f:
+                    f.write(range_analysis.report)
+
+                logger.info(f"Repport created at {report_path}")
+
+            num_subplot = len(players)
+
+            _fig, axes = plt.subplots(  # pyright: ignore[reportUnknownMemberType]
+                num_subplot, 1, figsize=(10, 4 * num_subplot), sharex=True
+            )
+
+            ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]
+
+            for ax, range_analysis in zip(ax_list, ranges_analysis):
+                range_analysis.plot_score_on_ax(ax)
+
+            ax_list[-1].set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
+            plt.tight_layout()
+
+            plot_path = folder / "plot.png"
+            plt.savefig(plot_path)  # pyright: ignore[reportUnknownMemberType]
+            plt.close()
+            logger.info(f"Plot saved at {plot_path}")

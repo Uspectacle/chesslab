@@ -9,17 +9,26 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "accelerate>=1.11.0",
+    "chess>=1.11.2", # https://github.com/CSSLab/maia2/issues/10
+    "einops>=0.8.1", # https://github.com/CSSLab/maia2/issues/10
+    "gdown>=5.2.0", # https://github.com/CSSLab/maia2/issues/10
     "huggingface-hub>=0.36.0",
+    "maia2>=0.9",
+    "maia2-stubs>=0.1.1",
     "matplotlib>=3.10.7",
     "numpy>=2.1.2",
+    "pandas>=2.3.3", # https://github.com/CSSLab/maia2/issues/10
     "psycopg2-binary>=2.9.11",
     "python-chess>=1.999",
     "python-dotenv>=1.2.1",
+    "pyzstd>=0.19.1", # https://github.com/CSSLab/maia2/issues/10
+    "requests>=2.28.1", # https://github.com/CSSLab/maia2/issues/10
     "scipy>=1.15.3",
     "scipy-stubs>=1.15.3.0",
     "sqlalchemy>=2.0.44",
     "structlog>=25.5.0",
     "torch==2.6.0",
+    "tqdm>=4.66.5", # https://github.com/CSSLab/maia2/issues/10
     "transformers>=4.57.1",
 ]
 

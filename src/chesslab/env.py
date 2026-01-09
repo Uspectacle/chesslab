@@ -7,7 +7,6 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import List
 
 import structlog
 from dotenv import load_dotenv
@@ -39,10 +38,14 @@ def get_database_url() -> str:
     )
 
 
-def get_stockfish_url() -> str | List[str]:
+def get_stockfish_url() -> str:
     return os.getenv(
         "STOCKFISH_URL", str(SRC_DIR / "third_party/stockfish/src/stockfish")
     )
+
+
+def get_maia_url() -> str:
+    return os.getenv("MAIA_URL", str(SRC_DIR / "third_party/maia"))
 
 
 if __name__ == "__main__":
@@ -52,3 +55,4 @@ if __name__ == "__main__":
 
     print(f"get_database_url: {get_database_url()}")
     print(f"get_stockfish_url: {get_stockfish_url()}")
+    print(f"get_maia_url: {get_maia_url()}")

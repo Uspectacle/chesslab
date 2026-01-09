@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import chess.engine
 import numpy as np
 import structlog
+import torch
 from sqlalchemy.orm import Session
 
 from chesslab.storage import Player, get_session
@@ -31,6 +32,36 @@ def get_random_player(
         player_id=player.id,
         seed=seed,
     )
+    return player
+
+
+def get_maia_player(
+    session: Session,
+    elo: int,
+    opponent_elo: Optional[int] = None,
+    for_blitz: bool = False,
+    use_gpu: bool = True,
+    create_not_raise: bool = True,
+) -> Player:
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="MaiaEngine",
+        expected_elo=int(elo),
+        options={
+            "UCI_Elo": int(elo),
+            "OpponentElo": int(opponent_elo) if opponent_elo is not None else int(elo),
+            "ModelType": "blitz" if for_blitz else "rapid",
+            "Device": "gpu" if use_gpu and torch.cuda.is_available() else "cpu",
+        },
+        create_not_raise=create_not_raise,
+    )
+
+    logger.info(
+        "Maia player ready",
+        player_id=player.id,
+        expected_elo=int(player.expected_elo),
+    )
+
     return player
 
 
