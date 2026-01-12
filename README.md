@@ -1,485 +1,323 @@
 # ChessLab
 
-A modular chess engine testing framework with PostgreSQL storage, parallel game execution, and comprehensive analysis tools.
+A modular, open-source chess engine testing and evaluation framework with PostgreSQL storage, parallel game execution, and comprehensive statistical analysis tools.
 
 ## Features
 
-- **Multiple engine types**: Random, Stockfish wrappers, batch evaluators, alternating engines
-- **Parallel game execution**: Run hundreds of games concurrently
-- **PostgreSQL storage**: Persistent game history, moves, and evaluations
-- **PGN import/export**: Standard format support
-- **Analysis tools**: Elo estimation, statistics, visualization
+- **Multiple Engine Types**: Stockfish, Maia2, LLM, voting ensembles
+- **Parallel Game Execution**: Run hundreds of games concurrently
+- **Persistent Storage**: Game history, moves, evaluations, engine configurations
+- **Statistical Analysis**: Elo estimation, confidence intervals, range analysis
+- **LLM Integration**: HuggingFace models with customizable prompts and template variables
+- **Ensemble Methods**: Combine multiple engines with diverse voting strategies
+- **PGN Support**: Import/export games in standard PGN format
 
-## Setup
+## Acknowledgements
 
-1. Install dependencies:
-
-```bash
-poetry install
-```
-
-2. Setup PostgreSQL database:
-
-```bash
-createdb chesslab
-python -m scripts.setup_db
-```
-
-3. Compile engines to .exe (optional):
-
-```bash
-python -m scripts.compile_engines
-```
-
-## Usage
-
-### Run a tournament
-
-```python
-from arena.runner import TournamentRunner
-from engines.random_engine import RandomEngine
-from engines.uci_wrapper import StockfishEngine
-
-runner = TournamentRunner()
-runner.add_player(RandomEngine())
-runner.add_player(StockfishEngine(skill_level=1))
-runner.run_tournament(games_per_pairing=100, concurrency=10)
-```
-
-### Analyze results
-
-```python
-from analysis.example import plot_player_scores
-
-plot_player_scores(player_id_1=1, player_id_2=2)
-```
-
-## Architecture
-
-- **engines/**: Engine implementations and wrappers
-- **arena/**: Tournament coordination and parallel execution
-- **storage/**: Database models, migrations, and PGN tools
-- **analysis/**: Statistics, Elo calculation, and visualization
+- LLMs were used during the development of this project
+- **Maia2**: Neural network model for human-like chess play - [CSSLab/maia2](https://github.com/CSSLab/maia2)
+- **Stockfish**: Classical UCI chess engine - [official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish) (included as a git submodule)
+- **Chess.py**: Pure Python chess library - [niklasf/python-chess](https://github.com/niklasf/python-chess)
 
 ## Quick Start
 
-### 1. Install dependencies
+### Prerequisites
+- Python 3.13+
+- PostgreSQL 14+ (or use Docker)
+- [uv package manager](https://docs.astral.sh/uv/) (optional, but recommended)
 
+### Installation
+
+1. **Clone the repository**:
 ```bash
-poetry install
+git clone --recurse-submodules <repo-url>
+cd chesslab
 ```
 
-### 2. Setup database
-
+If you already cloned without submodules, initialize them:
 ```bash
-createdb chesslab
-python -m scripts.setup_db
+git submodule update --init --recursive
 ```
 
-### 3. Run demo
-
+2. **Install dependencies**:
 ```bash
-python demo.py
+# Using uv (recommended)
+uv sync
+
+# Or using pip
+pip install -e .
 ```
 
-### 4. Export results
+3. **Start PostgreSQL** (using Docker):
+```bash
+docker compose up -d postgres
+```
+
+4. **Initialize the database**:
+```bash
+python -m chesslab.storage.setup_db
+```
+
+### Environment Variables
+
+Create a `.env` file in the project root:
 
 ```bash
-python -m storage.pgn_tools export games.pgn --limit 100
+# Database connection (default for Docker)
+DATABASE_URL=postgresql://chesslab:chesslab_dev@localhost:5432/chesslab
+```
+
+### Database Management
+
+```bash
+# Start PostgreSQL container
+docker compose up -d postgres
+
+# Initialize/reset database
+uv run -m chesslab.storage.setup_db
+
+# Access database shell
+docker compose exec postgres psql -U chesslab -d chesslab
+```
+
+### Development Dependencies
+
+Using uv, development dependencies can be synced with:
+
+```bash
+uv sync --group dev
+```
+
+### Running Experiments
+
+```bash
+# Baseline Stockfish testing
+uv run -m chesslab.experiment.verify_stockfish
+
+# Maia engine validation
+uv run -m chesslab.experiment.verify_maia
+
+# Voting ensemble testing
+uv run -m chesslab.experiment.majority_voting
+
+# LLM prompt optimization
+uv run -m chesslab.experiment.llm_prompt
 ```
 
 ## Usage Examples
 
-### Run a simple match
+### Run a simple game
 
 ```python
-from engines.random_engine import RandomEngine
-from engines.uci_wrapper import StockfishWrapper
-from arena.runner import TournamentRunner
+import asyncio
 
-runner = TournamentRunner()
+from chesslab.analysis.analyze_game import GameAnalysis
+from chesslab.analysis.evaluator import Evaluator
+from chesslab.arena.run_game import create_game, run_game
+from chesslab.engines.init_engines import get_random_player, get_stockfish_player, get_session
 
-# Register players
-sf_id = runner.register_player("stockfish", {"skill_level": 5})
-random_id = runner.register_player("random", {})
+with get_session() as session:
+    # Create players
+    stockfish = get_stockfish_player(session=session, elo=1500)
+    random = get_random_player(session=session)
 
-# Create engines
-stockfish = StockfishWrapper(skill_level=5)
-random = RandomEngine()
+    # Initialize a game
+    game = create_game(
+        session=session,
+        white_player_id=stockfish.id,
+        black_player_id=random.id
+    )
 
-# Run 100 games with 10 concurrent
-results = runner.run_match(
-    stockfish, random,
-    sf_id, random_id,
-    games=100,
-    alternate_colors=True
-)
+    # Run the game
+    asyncio.run(run_game(session=session, game=game))
+
+    # Analyse the game
+    with Evaluator() as evaluator:
+        analysis = GameAnalysis(evaluator=evaluator, game=game)
+        print(analysis.report)
 ```
 
-### Analyze results
+### Run a match between two engines
 
 ```python
-from storage.models import create_db_engine, create_session
-from storage.access import get_player_statistics
-from analysis.example import plot_player_scores, estimate_elo_ratings
+import asyncio
+from chesslab.analysis.analyze_match import MatchAnalysis
+from chesslab.analysis.evaluator import Evaluator
+from chesslab.arena.run_match import get_or_create_match, run_multiple_games
+from chesslab.engines.init_engines import get_stockfish_player, get_maia_player, get_session
 
-engine = create_db_engine()
-session = create_session(engine)
+with get_session() as session:
+    white = get_stockfish_player(session=session, elo=1600)
+    black = get_maia_player(session=session, elo=1400)
 
-# Get statistics
-stats = get_player_statistics(session, player_id=1)
-print(f"Win rate: {stats['wins'] / stats['total_games'] * 100:.1f}%")
+    # Create 100 games between the two players
+    games = get_or_create_match(
+        session=session,
+        white_player_id=white.id,
+        black_player_id=black.id,
+        num_games=100,
+        alternate_color=True
+    )
 
-# Plot head-to-head
-plot_player_scores(player_id_1=1, player_id_2=2)
+    # Run all games in parallel (max 8 concurrent)
+    asyncio.run(run_multiple_games(session=session, games=games, max_concurrent=8))
 
-# Estimate Elo ratings
-elos = estimate_elo_ratings(session, [1, 2, 3, 4])
+    # Analyze results with statistical tests
+    with Evaluator() as evaluator:
+        analysis = MatchAnalysis(
+            session=session,
+            evaluator=evaluator,
+            player_1=white,
+            player_2=black,
+            num_games=100
+        )
+        print(analysis.report)
 ```
 
-### Create custom engines
+### Evaluate a Player Across a Range of Opponents
 
 ```python
-from engines.alternator import AlternatorEngine
-from engines.random_engine import RandomEngine
-from engines.uci_wrapper import StockfishWrapper
-
-# Mix Stockfish and random moves
-alternator = AlternatorEngine(
-    engines=[
-        StockfishWrapper(skill_level=10),
-        RandomEngine()
-    ],
-    mode="sequential"  # Alternates each move
-)
-```
-
-## Milestones
-
-### Completed ✓
-
-1. ✓ Project scaffold + DB schema
-2. ✓ PGN import/export
-3. ✓ Basic arena runner
-4. ✓ Parallel execution (10-20 concurrent games)
-5. ✓ Random engine + UCI protocol
-6. ✓ Worstfish (inverted Stockfish)
-7. ✓ Alternating engine (mixes strategies)
-8. ✓ Basic analysis tools (Elo, statistics, plots)
-
-### Planned ⏳
-
-9. ⏳ Batch evaluation engine (wait for N requests, evaluate once)
-10. ⏳ Gemini API integration (batch position evaluation)
-11. ⏳ Engine compilation with PyInstaller
-12. ⏳ Web dashboard for live game monitoring
-
-## Project Structure Details
-
-### engines/
-
-- `base.py`: Engine protocol interface
-- `random_engine.py`: Random move generator
-- `worstfish.py`: Inverted Stockfish (plays worst moves)
-- `alternator.py`: Mixes multiple engines
-- `uci_wrapper.py`: Generic UCI engine wrapper
-- `batch.py`: Batch evaluation (planned)
-- `gemini.py`: Gemini API engine (planned)
-
-### arena/
-
-- `runner.py`: Tournament coordinator with parallel execution
-
-### storage/
-
-- `models.py`: SQLAlchemy database models
-- `schema.sql`: Reference SQL schema
-- `access.py`: High-level database operations
-- `pgn_tools.py`: Import/export PGN files
-
-### analysis/
-
-- `example.py`: Statistics, Elo calculation, visualization
-
-### scripts/
-
-- `setup_db.py`: Initialize database schema
-- `compile_engines.py`: Build standalone executables
-
-## Technical Notes
-
-- **Concurrency**: 10-20 games recommended to avoid resource exhaustion
-- **Database**: PostgreSQL with proper concurrent write support
-- **Engine pooling**: Future optimization for better resource management
-- **UCI protocol**: All engines compatible with standard chess GUIs
-- **Async support**: Consider adding async/await for better performance (future)
-
-## Database Schema
-
-```
-players → games ← moves ← evaluations
-                    ↓
-                 requests (batch processing)
-```
-
-- **players**: Engine configurations
-- **games**: Match results and metadata
-- **moves**: Individual moves with FEN positions
-- **evaluations**: Engine analysis of positions
-- **requests**: Batch evaluation queue with status tracking
-
-# ChessLab Quick Start
-
-Get ChessLab running in 5 minutes with zero PostgreSQL knowledge required!
-
-## Prerequisites
-
-Just need these two things:
-1. **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
-2. **Python 3.10+** - [Download here](https://www.python.org/downloads/)
-
-## Installation
-
-### 1. Clone and setup
-```bash
-git clone <your-repo-url>
-cd chesslab
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Copy environment configuration
-cp .env.example .env
-```
-
-### 2. Start the database
-```bash
-make db-up
-# Wait a few seconds for database to initialize...
-```
-
-### 3. Initialize the database schema
-```bash
-make setup
-```
-
-That's it! You're ready to go 🎉
-
-## Running Your First Tournament
-
-```python
-from chesslab.tournament import TournamentRunner
-
-# Create tournament runner (uses Docker database automatically)
-tournament = TournamentRunner()
-
-# Register two players
-stockfish_id = tournament.register_player("stockfish", {"Depth": 10})
-random_id = tournament.register_player("RandomEngine")
-
-# Run a match - 10 games with alternating colors
-results = tournament.run_match(
-    white_player_id=stockfish_id,
-    black_player_id=random_id,
-    games=10,
-    alternate_colors=True
+from chesslab.analysis.analyze_range import RangeAnalysis
+from chesslab.analysis.evaluator import Evaluator
+from chesslab.arena.run_match import run_range
+from chesslab.engines.init_engines import (
+    get_llm_player,
+    get_stockfish_range,
+    get_session
 )
 
-# View results
-for result in results:
-    print(f"Game {result.game_id}: {result.result}")
+with get_session() as session:
+    # Create LLM player
+    llm_player = get_llm_player(
+        session=session,
+        model_name="meta-llama/Llama-3.2-1B-Instruct"
+    )
+
+    # Create range of Stockfish opponents (1320-2200 Elo, 3 steps)
+    opponents = get_stockfish_range(
+        session=session,
+        min_elo=1320,
+        max_elo=2200,
+        num_step=3
+    )
+
+    # Run all matches
+    run_range(
+        session=session,
+        players=[llm_player],
+        opponents=opponents,
+        num_games=20,
+        max_concurrent=4
+    )
+
+    # Analyze performance across the range
+    with Evaluator() as evaluator:
+        analysis = RangeAnalysis(
+            session=session,
+            evaluator=evaluator,
+            player=llm_player,
+            opponents=opponents,
+            num_games=20
+        )
+        print(analysis.report)
+        analysis.plot_scores("output_dir")
 ```
 
-## Useful Commands
+## Project Architecture
 
-```bash
-# Database management
-make db-up       # Start database
-make db-down     # Stop database
-make db-reset    # Clear all data and restart
-make db-shell    # Open PostgreSQL terminal
-make db-logs     # View database logs
+### Engine Types and Implementations
 
-# Optional: Start with web UI
-make pgadmin     # Access at http://localhost:5050
+- **Stockfish** (`third_party/stockfish`): Classical UCI protocol engine ([official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish))
+- **Random Engine** (`engines/random_engine.py`): Baseline random legal move generator
+- **Maia2 Engine** (`engines/maia_engine.py`): Neural network-based engine trained to simulate human play across skill levels ([CSSLab/maia2](https://github.com/CSSLab/maia2))
+- **LLM Engine** (`engines/llm_engine.py`): Large language model with customizable prompts
+- **Voting Engine** (`engines/voting_engine.py`): Ensemble combinator aggregating decisions from multiple engines via voting strategies
+
+### Core Module Structure
+
+#### **storage/** - Data Persistence Layer
+Handles all database interactions and schema management:
+- `schema.py`: SQLAlchemy ORM models (Player, Game, Move, Evaluation, Request)
+- `db_tools.py`: Session management and connection pooling
+- `game_tools.py`: Game record CRUD operations
+- `move_tools.py`: Move sequence and board state management
+- `pgn_tools.py`: PGN parsing, import, and export utilities
+- `player_tools.py`: Engine/player configuration persistence
+- `evaluation_tools.py`: Engine evaluation result storage
+- `setup_db.py`: Schema initialization and migration
+
+#### **engines/** - Engine Implementations
+UCI-compatible and custom engine interfaces:
+- `base_engine.py`: Abstract base class defining engine interface
+- `init_engines.py`: Factory functions for creating and retrieving engine instances
+- `compile_engines.py`: PyInstaller tools for creating standalone executables
+- `storage_tools.py`: Protocol management and serialization
+- **options/**: UCI option configuration system
+  - `options.py`: Base Option classes (Spin, Combo, Button, String)
+  - `prompts.py`: System/user prompt templates for LLM engines
+  - `prompt_variables.py`: Template variable substitution (Elo, FEN, legal moves, PGN, etc.)
+  - `parsers.py`: Move parsing strategies for LLM outputs
+  - `aggregators.py`: Voting and ensemble aggregation methods
+
+#### **arena/** - Game Execution Engine
+Orchestrates single games and tournaments:
+- `run_game.py`: Asynchronous single game execution with UCI protocol communication
+- `run_match.py`: Tournament coordination, parallel game scheduling, and match generation
+- Supports concurrent game execution with configurable concurrency limits
+
+#### **analysis/** - Statistical Analysis Tools
+Comprehensive post-game evaluation:
+- `analyze_game.py`: Single game analysis and move evaluation
+- `analyze_match.py`: Head-to-head statistics, Elo estimation, hypothesis testing (t-tests, z-tests)
+- `analyze_range.py`: Performance across multiple opponents with weighted analysis
+- `evaluator.py`: Engine evaluation wrapper (Stockfish engine for position analysis)
+- `elo_tools.py`: Elo calculations, expected scores, parameter estimation
+- `stat_tools.py`: Statistical utilities (significance testing, confidence intervals)
+
+#### **experiment/** - Reproducible Research Scripts
+Pre-built experimental pipelines:
+- `verify_stockfish.py`: Baseline validation of Stockfish across Elo range
+- `verify_maia.py`: Maia2 engine evaluation and skill coverage
+- `llm_prompt.py`: LLM prompt optimization and model comparison
+- `majority_voting.py`: Ensemble voting strategy analysis
+
+### Database Schema
+
+```
+players (engine configurations)
+├── player_options (UCI options, prompts, hyperparameters)
+└── games (match results, metadata)
+    ├── moves (individual moves in game sequence)
+    │   └── evaluations (engine analysis of positions)
+    └── requests (batch LLM evaluation queue for async processing)
 ```
 
-## What Just Happened?
+**Key Tables:**
+- `players`: Engine type, name, Elo, creation timestamp
+- `player_options`: Option name, value, engine-specific settings
+- `games`: White/Black player IDs, result, PGN, metadata
+- `moves`: Sequence, SAN, UCI, board state, move quality
+- `evaluations`: Engine evaluation score, depth, best continuation
+- `requests`: Batch processing queue for LLM inference
 
-When you ran `make db-up`, Docker:
-1. Downloaded PostgreSQL (only happens once)
-2. Started it in a container
-3. Created the `chesslab` database
-4. Made it available at `localhost:5432`
 
-All your data is safely stored in a Docker volume, so it persists even if you stop the container.
 
-## Troubleshooting
+## Citation
 
-### "Port 5432 already in use"
-You have PostgreSQL already running locally. Either:
-- Stop it: `sudo service postgresql stop` (Linux) or Services app (Windows)
-- Or change port in `docker-compose.yml` to `5433:5432`
+If you use ChessLab in research, please cite as:
 
-### Docker Desktop not starting
-- Make sure WSL2 is enabled (Windows)
-- Restart Docker Desktop
-- Check Docker is running: `docker ps`
-
-### Can't connect to database
-```bash
-# Check database is running
-docker ps
-
-# View logs for errors
-make db-logs
-
-# Restart fresh
-make db-reset
+```bibtex
+@software{chesslab2024,
+  title={ChessLab: A Modular Chess Engine Testing and Evaluation Framework},
+  author={Larsen, Mario},
+  year={2024},
+  url={https://github.com/Uspectacle/chesslab}
+}
 ```
 
-## Where's My Data?
+## License and Contributing
 
-All database data is stored in a Docker volume called `chesslab_postgres_data`.
+This project is under GNU v3 License (see [LICENSE.txt](LICENSE.txt)).
 
-To see it: `docker volume ls`
-
-To backup: `docker run --rm -v chesslab_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/db-backup.tar.gz /data`
-
-To completely delete: `docker compose down -v` (⚠️ destroys all data!)
-
-## Next Steps
-
-- Check out `examples/` for more usage patterns
-- Read `DATABASE_SETUP.md` for advanced configuration
-- View games in pgAdmin: `make pgadmin`
-
-## Getting Help
-
-If something isn't working:
-1. Check `make db-logs` for errors
-2. Try `make db-reset` to start fresh
-3. Open an issue on GitHub
-# ChessLab Database Setup
-
-This project uses PostgreSQL in a Docker container - no local PostgreSQL installation needed!
-
-## Prerequisites
-
-- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
-- Python 3.10+ with dependencies installed
-
-## Quick Start
-
-### 1. Copy environment file
-```bash
-cp .env.example .env
-```
-
-### 2. Start the database
-```bash
-make db-up
-# Or: docker compose up -d
-```
-
-### 3. Initialize the schema
-```bash
-make setup
-# Or: python scripts/setup_db.py
-```
-
-That's it! Your database is running at `localhost:5432`.
-
-## Common Commands
-
-| Command | Description |
-|---------|-------------|
-| `make db-up` | Start PostgreSQL container |
-| `make db-down` | Stop PostgreSQL container |
-| `make db-reset` | Delete all data and recreate schema |
-| `make db-shell` | Open PostgreSQL command line |
-| `make db-logs` | View database logs |
-| `make pgadmin` | Start with pgAdmin web UI |
-
-## Database Access
-
-**Connection Details:**
-- Host: `localhost`
-- Port: `5432`
-- Database: `chesslab`
-- Username: `chesslab`
-- Password: `chesslab_dev`
-
-**Connection String:**
-```
-postgresql://chesslab:chesslab_dev@localhost:5432/chesslab
-```
-
-## Using pgAdmin (Optional)
-
-For a visual database management interface:
-
-```bash
-make pgadmin
-```
-
-Then open http://localhost:5050 in your browser:
-- Email: `admin@chesslab.local`
-- Password: `admin`
-
-To connect to the database in pgAdmin:
-1. Right-click "Servers" → "Register" → "Server"
-2. Name: `ChessLab`
-3. Connection tab:
-   - Host: `postgres` (when pgAdmin is in Docker) or `localhost`
-   - Port: `5432`
-   - Database: `chesslab`
-   - Username: `chesslab`
-   - Password: `chesslab_dev`
-
-## Troubleshooting
-
-### Port 5432 already in use
-If you have local PostgreSQL running:
-```bash
-# Stop local PostgreSQL (Windows)
-net stop postgresql-x64-14
-
-# Or change the port in docker-compose.yml
-ports:
-  - "5433:5432"  # Use port 5433 instead
-```
-
-### WSL Issues
-Docker Desktop on Windows with WSL2 should work out of the box. Make sure:
-1. Docker Desktop is running
-2. WSL2 integration is enabled in Docker Desktop settings
-3. You're running commands from your WSL2 terminal
-
-### Database won't start
-```bash
-# Check logs
-make db-logs
-
-# Clean restart
-docker compose down -v
-make db-up
-```
-
-## Data Persistence
-
-Database data is stored in a Docker volume called `postgres_data`. It persists between container restarts.
-
-To completely remove all data:
-```bash
-docker compose down -v
-```
-
-## Production Notes
-
-For production, you should:
-1. Use strong passwords (change in docker-compose.yml)
-2. Use managed database services (AWS RDS, Google Cloud SQL, etc.)
-3. Set up proper backups
-4. Use SSL connections
-5. Configure environment-specific credentials
+Contributions are welcome!
+Please submit feature requests, suggestions and report issues on [GitHub Issues](https://github.com/Uspectacle/chesslab/issues)

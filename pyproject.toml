@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Modular chess engine testing framework"
 readme = "README.md"
 authors = [
-    { name = "Uspectacle", email = "super.mario.larsen@gmail.com" }
+    { name = "Uspectacle", email = "uspectacle@gmail.com" }
 ]
 requires-python = ">=3.13"
 dependencies = [
