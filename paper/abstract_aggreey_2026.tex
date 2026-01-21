@@ -1,0 +1,122 @@
+%%%% kr-instructions.tex -- version 1.3 (11-Jan-2021)
+
+\typeout{KR2025 Instructions for Authors}
+
+% These are the instructions for authors for KR-25.
+
+\documentclass{article}
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+\usepackage{kr}
+
+% Use the postscript times font!
+\usepackage{times}
+\usepackage{soul}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[small]{caption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\urlstyle{same}
+
+\usepackage{lipsum}
+
+% the following package is optional:
+%\usepackage{latexsym}
+
+% See https://www.overleaf.com/learn/latex/theorems_and_proofs
+% for a nice explanation of how to define new theorems, but keep
+% in mind that the amsthm package is already included in this
+% template and that you must *not* alter the styling.
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+
+% Following comment is from ijcai97-submit.tex:
+% The preparation of these files was supported by Schlumberger Palo Alto
+% Research, AT\&T Bell Laboratories, and Morgan Kaufmann Publishers.
+% Shirley Jowell, of Morgan Kaufmann Publishers, and Peter F.
+% Patel-Schneider, of AT\&T Bell Laboratories collaborated on their
+% preparation.
+
+% These instructions can be modified and used in other conferences as long
+% as credit to the authors and supporting agencies is retained, this notice
+% is not changed, and further modification or reuse is not restricted.
+% Neither Shirley Jowell nor Peter F. Patel-Schneider can be listed as
+% contacts for providing assistance without their prior permission.
+
+% To use for other conferences, change references to files and the
+% conference appropriate and use other authors, contacts, publishers, and
+% organizations.
+% Also change the deadline and address for returning papers and the length and
+% page charge instructions.
+% Put where the files are available in the appropriate places.
+%PDF Info Is REQUIRED.
+\pdfinfo{
+/TemplateVersion (KR.2022.0, KR.2023.0, KR.2024.0, KR.2025.0)
+}
+
+
+
+\title{ChessLab: \\ A Framework for Measuring Argumentation Methodology Effectiveness }
+
+% Single author syntax
+\author{
+    Mario Larsen
+    \affiliations
+    Independent Researcher
+    \emails
+    uspectacle@gmail.com
+}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+
+The \emph{wisdom of crowds} hypothesis states that aggregating the judgments of diverse and independent agents can yield decisions superior to those of individuals \cite{surowiecki2004}.
+While this effect is well documented in estimation and forecasting tasks, its applicability to complex, sequential decision-making domains such as chess remains an active area of inquiry.
+
+Historical crowd-versus-expert chess matches and large online events \cite{chess2025} suggest that crowds can be competitive, yet these settings are often anecdotal and lack rigorous experimental control.
+More recent systematic evidence demonstrated that large crowds of casual players could rival 1900 Elo artificial opponents over hundreds of games \cite{moussaid2025}.
+However, research indicates that simple majority voting may not always be optimal \cite{prelec2017}.
+
+Chess engine systems, ranging from search-based algorithms to human-mimetic neural networks \cite{maia2024}, offer adversaries with precisely controllable strength, diversity, and reproducibility.
+At the same time, large language models are beginning to reach grandmaster levels, showing signs of an emerging internal model of the game \cite{karvonen2024,carlini2023}.
+This motivates the development of a controlled framework in which collective intelligence can be studied without the confounds inherent to human experiments.
+We propose \textbf{ChessLab} to fill this gap by enabling large-scale, reproducible experiments on artificial crowds in chess, with explicit control over ensemble composition and aggregation mechanisms.
+
+\section*{Relevance to Argumentation}
+
+This work is intended to serve as a tool for studying voting mechanisms and deliberation strategies between artificial agents in a chess context.
+Chess provides an objective evaluation signal (game outcomes and engine-based position scores) that allows the effectiveness of various methodologies to be compared with arbitrary precision.
+
+\section*{Conclusion}
+
+The modular framework supports controlled manipulation of agent diversity, aggregation rules, and opponent strength and provide a range of evaluation and visualization tools.
+Results are computed and analysed in parallel, offering the ability to scale experiments and test variables independently.
+The source code is available at \url{https://github.com/Uspectacle/chesslab} under the GNU v3 License.
+
+Although our current main contribution lies in providing this infrastructure, we also provide experimental results to compare against previous studies conducted on humans.
+An accompanying roadmap outlines a sequence of experiments designed to explore optimized deliberation mechanisms.
+
+\section*{Acknowledgments}
+
+This research is conducted independently by the author while awaiting a PhD opportunity in collaborative writing and collective intelligence.
+Due to limited compute capacity, only lower-strength engines were experimented upon.
+Nonetheless, this project aims to enable further experimentation and interesting discoveries.
+
+
+
+%% The file kr.bst is a bibliography style file for BibTeX 0.99c
+\bibliographystyle{kr}
+\bibliography{references}
+
+\end{document}
+
