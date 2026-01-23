@@ -21,74 +21,89 @@ A modular, open-source chess engine testing and evaluation framework with Postgr
 
 ## Quick Start
 
-### Prerequisites
-- Python 3.13+
-- PostgreSQL 14+ (or use Docker)
-- [uv package manager](https://docs.astral.sh/uv/) (optional, but recommended)
+### 1. Prerequisites
 
-### Installation
+- **Python 3.13+**
+- **PostgreSQL 14+** (running locally)
+- **uv** package manager _(recommended)_
 
-1. **Clone the repository**:
+> **Note for Linux users:** If you just installed PostgreSQL, ensure it is initialized and running:
+>
+> ```bash
+> sudo postgresql-setup --initdb
+> sudo systemctl enable --now postgresql
+> ```
+
+### 2. Clone the Repository
+
 ```bash
 git clone --recurse-submodules <repo-url>
 cd chesslab
 ```
 
-If you already cloned without submodules, initialize them:
-```bash
-git submodule update --init --recursive
-```
+_If already cloned without submodules:_ `git submodule update --init --recursive`
 
-2. **Install dependencies**:
+### 3. Install Python Dependencies
+
 ```bash
-# Using uv (recommended)
+# Recommended
 uv sync
 
-# Or using pip
+# Or with pip
 pip install -e .
 ```
 
-3. **Start PostgreSQL** (using Docker):
+### 4. Build Engines
+
+Stockfish is included as a submodule and must be compiled for your specific architecture. (Maia is handled via Python dependencies).
+
 ```bash
-docker compose up -d postgres
+cd src/third_party/stockfish/src/
+make -j profile-build
+cd -
 ```
 
-4. **Initialize the database**:
-```bash
-python -m chesslab.storage.setup_db
-```
-
-### Environment Variables
+### 5. Configure Environment
 
 Create a `.env` file in the project root:
 
-```bash
-# Database connection (default for Docker)
+```env
 DATABASE_URL=postgresql://chesslab:chesslab_dev@localhost:5432/chesslab
 ```
 
-### Database Management
+### 6. Create and Configure the Database
+
+Run the following block as the `postgres` superuser to create the user, the database, and set the correct schema permissions (required for PostgreSQL 15+).
 
 ```bash
-# Start PostgreSQL container
-docker compose up -d postgres
+sudo -u postgres psql <<EOF
+CREATE USER chesslab WITH PASSWORD 'chesslab_dev';
+CREATE DATABASE chesslab OWNER chesslab;
+GRANT ALL PRIVILEGES ON DATABASE chesslab TO chesslab;
+\c chesslab
+GRANT ALL ON SCHEMA public TO chesslab;
+EOF
+```
 
-# Initialize/reset database
+### 7. Initialize the Database Schema
+
+This command sets up the tables and structures required for the experiments.
+
+```bash
 uv run -m chesslab.storage.setup_db
-
-# Access database shell
-docker compose exec postgres psql -U chesslab -d chesslab
 ```
 
-### Development Dependencies
+### 8. Access the Database Shell (Optional)
 
-Using uv, development dependencies can be synced with:
+To check your data manually, connect using the project user:
 
 ```bash
-uv sync --group dev
+psql -U chesslab -d chesslab -h localhost
 ```
 
-### Running Experiments
+### 9. Run Experiments
+
+You are now ready to run the experiment suite:
 
 ```bash
 # Baseline Stockfish testing
@@ -131,7 +146,7 @@ with get_session() as session:
     # Run the game
     asyncio.run(run_game(session=session, game=game))
 
-    # Analyse the game
+    # Analyze the game
     with Evaluator() as evaluator:
         analysis = GameAnalysis(evaluator=evaluator, game=game)
         print(analysis.report)
@@ -236,7 +251,9 @@ with get_session() as session:
 ### Core Module Structure
 
 #### **storage/** - Data Persistence Layer
+
 Handles all database interactions and schema management:
+
 - `schema.py`: SQLAlchemy ORM models (Player, Game, Move, Evaluation, Request)
 - `db_tools.py`: Session management and connection pooling
 - `game_tools.py`: Game record CRUD operations
@@ -247,7 +264,9 @@ Handles all database interactions and schema management:
 - `setup_db.py`: Schema initialization and migration
 
 #### **engines/** - Engine Implementations
+
 UCI-compatible and custom engine interfaces:
+
 - `base_engine.py`: Abstract base class defining engine interface
 - `init_engines.py`: Factory functions for creating and retrieving engine instances
 - `compile_engines.py`: PyInstaller tools for creating standalone executables
@@ -260,13 +279,17 @@ UCI-compatible and custom engine interfaces:
   - `aggregators.py`: Voting and ensemble aggregation methods
 
 #### **arena/** - Game Execution Engine
+
 Orchestrates single games and tournaments:
+
 - `run_game.py`: Asynchronous single game execution with UCI protocol communication
 - `run_match.py`: Tournament coordination, parallel game scheduling, and match generation
 - Supports concurrent game execution with configurable concurrency limits
 
 #### **analysis/** - Statistical Analysis Tools
+
 Comprehensive post-game evaluation:
+
 - `analyze_game.py`: Single game analysis and move evaluation
 - `analyze_match.py`: Head-to-head statistics, Elo estimation, hypothesis testing (t-tests, z-tests)
 - `analyze_range.py`: Performance across multiple opponents with weighted analysis
@@ -275,7 +298,9 @@ Comprehensive post-game evaluation:
 - `stat_tools.py`: Statistical utilities (significance testing, confidence intervals)
 
 #### **experiment/** - Reproducible Research Scripts
+
 Pre-built experimental pipelines:
+
 - `verify_stockfish.py`: Baseline validation of Stockfish across Elo range
 - `verify_maia.py`: Maia2 engine evaluation and skill coverage
 - `llm_prompt.py`: LLM prompt optimization and model comparison
@@ -293,14 +318,13 @@ players (engine configurations)
 ```
 
 **Key Tables:**
+
 - `players`: Engine type, name, Elo, creation timestamp
 - `player_options`: Option name, value, engine-specific settings
 - `games`: White/Black player IDs, result, PGN, metadata
 - `moves`: Sequence, SAN, UCI, board state, move quality
 - `evaluations`: Engine evaluation score, depth, best continuation
 - `requests`: Batch processing queue for LLM inference
-
-
 
 ## Citation
 
