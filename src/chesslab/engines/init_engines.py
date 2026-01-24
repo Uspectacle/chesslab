@@ -183,14 +183,14 @@ def get_stockfish_player(
             "UCI_LimitStrength": True,
             "UCI_Elo": int(elo),
         }
-        logger.debug("Using ELO limit strength", elo=elo)
+        logger.debug("Using Elo limit strength", elo=elo)
     else:
         options: Dict[str, Any] = {
             "UCI_LimitStrength": False,
         }
         calculated_elo = stockfish_elo(depth)
         logger.debug(
-            "No ELO specified, using unlimited strength",
+            "No Elo specified, using unlimited strength",
             calculated_elo=calculated_elo,
         )
 
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     with get_session() as session:
         logger.info("Database session created")
 
-        logger.info("Creating Stockfish player with ELO 1320")
+        logger.info("Creating Stockfish player with Elo 1320")
         white_player = get_stockfish_player(
             session=session,
             elo=1320,

@@ -4,23 +4,23 @@ Match: LlmEngine (ID: 59) vs Stockfish (ID: 2)
 Games played: 3
 Score: 0.000 win - 0.000 draw - 3.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 1073.6379310344828
 Mean observed score: 0.000
-Expected ELO: 300
+Expected Elo: 300
 Expected score: 0.003
 P-value of expectation: 0.93512
-Estimated ELO: 250
+Estimated Elo: 250
 Estimated score: 0.002
 P-value of estimation: 0.94378
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 42.32203389830509
 Mean observed score: 1.000
-Expected ELO: 1320
+Expected Elo: 1320
 Expected score: 0.997
 P-value of expectation: 0.93512
-Estimated ELO: 3000
+Estimated Elo: 3000
 Estimated score: 1.000
 P-value of estimation: 0.99948
 --------------------------------------------------
@@ -29,23 +29,23 @@ Match: LlmEngine (ID: 59) vs Stockfish (ID: 3)
 Games played: 3
 Score: 0.000 win - 0.000 draw - 3.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 1443.046511627907
 Mean observed score: 0.000
-Expected ELO: 300
+Expected Elo: 300
 Expected score: 0.000
 P-value of expectation: 0.98168
-Estimated ELO: 250
+Estimated Elo: 250
 Estimated score: 0.000
 P-value of estimation: 0.98413
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 45.72727272727273
 Mean observed score: 1.000
-Expected ELO: 1760
+Expected Elo: 1760
 Expected score: 1.000
 P-value of expectation: 0.98168
-Estimated ELO: 3000
+Estimated Elo: 3000
 Estimated score: 1.000
 P-value of estimation: 0.99948
 --------------------------------------------------
@@ -54,23 +54,23 @@ Match: LlmEngine (ID: 59) vs Stockfish (ID: 4)
 Games played: 3
 Score: 0.000 win - 0.000 draw - 3.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 1557.948717948718
 Mean observed score: 0.000
-Expected ELO: 300
+Expected Elo: 300
 Expected score: 0.000
 P-value of expectation: 0.99484
-Estimated ELO: 250
+Estimated Elo: 250
 Estimated score: 0.000
 P-value of estimation: 0.99553
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 20.675
 Mean observed score: 1.000
-Expected ELO: 2200
+Expected Elo: 2200
 Expected score: 1.000
 P-value of expectation: 0.99484
-Estimated ELO: 3000
+Estimated Elo: 3000
 Estimated score: 1.000
 P-value of estimation: 0.99948
 ==================================================

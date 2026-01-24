@@ -155,7 +155,7 @@ def main() -> None:
     ]
 
     # Define the prompt
-    prompt: str = "What is your chess ELO?"
+    prompt: str = "What is your chess Elo?"
 
     # GPU usage setting
     use_gpu: bool = True  # Set to False to force CPU usage

@@ -4,23 +4,23 @@ Match: VotingEngine (ID: 56) vs Stockfish (ID: 2)
 Games played: 20
 Score: 14.000 win - 0.000 draw - 6.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 747.3477088948787
 Mean observed score: 0.700
-Expected ELO: 1550
+Expected Elo: 1550
 Expected score: 0.790
 P-value of expectation: 0.33643
-Estimated ELO: 1467
+Estimated Elo: 1467
 Estimated score: 0.700
 P-value of estimation: 1.00000
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 758.1451758340847
 Mean observed score: 0.300
-Expected ELO: 1320
+Expected Elo: 1320
 Expected score: 0.210
 P-value of expectation: 0.33643
-Estimated ELO: 1402
+Estimated Elo: 1402
 Estimated score: 0.300
 P-value of estimation: 1.00000
 --------------------------------------------------
@@ -29,23 +29,23 @@ Match: VotingEngine (ID: 56) vs Stockfish (ID: 3)
 Games played: 20
 Score: 4.000 win - 2.000 draw - 14.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 857.9310861423221
 Mean observed score: 0.250
-Expected ELO: 1550
+Expected Elo: 1550
 Expected score: 0.230
 P-value of expectation: 0.83314
-Estimated ELO: 1569
+Estimated Elo: 1569
 Estimated score: 0.250
 P-value of estimation: 1.00000
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 762.6480238627889
 Mean observed score: 0.750
-Expected ELO: 1760
+Expected Elo: 1760
 Expected score: 0.770
 P-value of expectation: 0.83314
-Estimated ELO: 1740
+Estimated Elo: 1740
 Estimated score: 0.750
 P-value of estimation: 1.00000
 --------------------------------------------------
@@ -54,23 +54,23 @@ Match: VotingEngine (ID: 56) vs Stockfish (ID: 4)
 Games played: 20
 Score: 1.000 win - 0.000 draw - 19.000 loose
 
-For Player 1: 
+For Player 1:
 Average centipawn loss: 430.45489078822413
 Mean observed score: 0.050
-Expected ELO: 1550
+Expected Elo: 1550
 Expected score: 0.023
 P-value of expectation: 0.43483
-Estimated ELO: 1688
+Estimated Elo: 1688
 Estimated score: 0.050
 P-value of estimation: 1.00000
 
-For Player 2: 
+For Player 2:
 Average centipawn loss: 288.32956685499056
 Mean observed score: 0.950
-Expected ELO: 2200
+Expected Elo: 2200
 Expected score: 0.977
 P-value of expectation: 0.43483
-Estimated ELO: 2061
+Estimated Elo: 2061
 Estimated score: 0.950
 P-value of estimation: 1.00000
 ==================================================

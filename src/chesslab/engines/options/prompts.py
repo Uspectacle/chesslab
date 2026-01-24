@@ -10,13 +10,13 @@ logger = structlog.get_logger()
 minimal_system_prompt = "You are a chess engine. Respond with only the best move in UCI format (e.g., e2e4)."
 
 standard_system_prompt = (
-    "You are a chess engine with an ELO rating of {elo}. Analyze the position carefully and respond with your best move in UCI format (e.g., e2e4 for pawn to e4, e7e8q for pawn promotion to queen).\n"
+    "You are a chess engine with an Elo rating of {elo}. Analyze the position carefully and respond with your best move in UCI format (e.g., e2e4 for pawn to e4, e7e8q for pawn promotion to queen).\n"
     "\n"
     "Only output the move, nothing else."
 )
 
 detailed_system_prompt = (
-    "You are a strong chess engine with an ELO rating of {elo}. You are playing as {side_to_move} on move {move_number}.\n"
+    "You are a strong chess engine with an Elo rating of {elo}. You are playing as {side_to_move} on move {move_number}.\n"
     "\n"
     "Analyze the position and select your best move. Consider:\n"
     "- Material balance\n"

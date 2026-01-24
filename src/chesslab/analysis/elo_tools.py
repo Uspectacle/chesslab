@@ -1,4 +1,4 @@
-"""Experience: Calibrate Stockfish ELO levels (per-game statistical evaluation)."""
+"""Experience: Calibrate Stockfish Elo levels (per-game statistical evaluation)."""
 
 from typing import List
 

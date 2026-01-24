@@ -56,17 +56,17 @@
 \maketitle
 
 \begin{abstract}
-\emph{Wisdom of crowds} is a phenomenon stating that aggregated decisions of diverse, independent agents often outperform individual experts.
-However, crowds of casual chess players still struggle against strong opponents.
-Recent projects tend to show that the method by which a move is chosen by the crowd can significantly influence their performance.
-In this work, we introduce \textbf{ChessLab}, an open-source framework for studying artificial collective intelligence in sequential decision-making through chess.
-By replacing human crowds with heterogeneous ensembles of deterministic and learning-based chess engines, we began investigating questions such as:
-(1) Can voting ensembles of weak agents defeat stronger opponents?
-(2) How does diversity composition affect collective performance?
-(3) What voting mechanisms optimally aggregate engine decisions?
-This paper presents the framework, outlines our experimental methodology, and provides a comprehensive research roadmap for studies to be conducted during the next phase of this project.
+  \emph{Wisdom of crowds} is a phenomenon stating that aggregated decisions of diverse, independent agents often outperform individual experts.
+  However, crowds of casual chess players still struggle against strong opponents.
+  Recent projects tend to show that the method by which a move is chosen by the crowd can significantly influence their performance.
+  In this work, we introduce \textbf{ChessLab}, an open-source framework for studying artificial collective intelligence in sequential decision-making through chess.
+  By replacing human crowds with heterogeneous ensembles of deterministic and learning-based chess engines, we began investigating questions such as:
+  (1) Can voting ensembles of weak agents defeat stronger opponents?
+  (2) How does diversity composition affect collective performance?
+  (3) What voting mechanisms optimally aggregate engine decisions?
+  This paper presents the framework, outlines our experimental methodology, and provides a comprehensive research roadmap for studies to be conducted during the next phase of this project.
 
-\keywords{chess engines, wisdom of crowds}
+  \keywords{chess engines, wisdom of crowds}
 \end{abstract}
 
 \section{Introduction}
@@ -76,7 +76,7 @@ One of the earliest demonstrations comes from Galton's famous ox-weighing experi
 
 This phenomenon has been tested in a variety of settings, such as prediction markets, where Atanasov et al.\ compared prediction markets with prediction polls in a large geopolitical forecasting tournament and found that carefully aggregated team forecasts could outperform market prices~\cite{atanasov2017}.
 Question-answering game shows also provide natural experiments.
-In "Who Wants to Be a Millionaire", the "Ask the Audience" lifeline yields correct answers around 87-92\% of the time, whereas phone-a-friend experts succeed only about 55-65\% of the time, across many national editions of the show~\cite{surowiecki2004}.
+In ``Who Wants to Be a Millionaire'', the ``Ask the Audience'' lifeline yields correct answers around 87-92\% of the time, whereas phone-a-friend experts succeed only about 55-65\% of the time, across many national editions of the show~\cite{surowiecki2004}.
 However, in competitive games like chess, crowds have historically struggled against strong opponents.
 
 The 1999 Kasparov vs.\ The World match saw more than 50,000 human players collectively challenge the World Chess Champion Garry Kasparov~\cite{kasparov1999}, reaching move 62 before conceding.
@@ -120,9 +120,9 @@ Surowiecki systematized this observation, arguing that under certain conditions 
 
 Formally, Scott Page's \emph{Diversity Prediction Theorem} provides mathematical grounding:
 \begin{equation}
-\text{Collective Error} = \overline{\text{Individual Error}} - \text{Diversity}
+  \text{Collective Error} = \overline{\text{Individual Error}} - \text{Diversity}
 \end{equation}
-where collective error is the mean squared error of the group prediction, $\overline{\text{Individual Error}}$ is the average of individual squared errors, and Diversity captures how different agents' predictions are~\cite{page2007}.
+where collective error is the mean squared error of the group prediction, \(\overline{\text{Individual Error}}\) is the average of individual squared errors, and Diversity captures how different agents' predictions are~\cite{page2007}.
 This result implies that a team of common individuals can outperform a specialist, provided the group is large enough and exhibits sufficient diversity in cognitive approach.
 
 However, diversity alone is insufficient.
@@ -139,28 +139,27 @@ In summary, collective intelligence requires:
 (4) appropriate aggregation mechanisms, and possibly
 (5) calibration of confidence when weighting is available.
 
-[TODO add a passagge for this this article
-* **[Making the wisdom of crowds efficient](https://osf.io/preprints/psyarxiv/j9t6p_v1)**
-* **Title:** Making the wisdom of crowds efficient — with confidence
-* **Summary:** A preprint paper discussing methods to improve the "wisdom of crowds" by incorporating confidence levels or other metrics to weight individual contributions more effectively.]
+% TODO: Add passage for Making the wisdom of crowds efficient
+% https://osf.io/preprints/psyarxiv/j9t6p_v1
+% Methods to improve the wisdom of crowds by incorporating confidence levels
 
 \subsection{Collective Intelligence in Chess}
 
 Chess provides an ideal laboratory for studying collective decision-making in complex, sequential tasks.
 Unlike static judgment tasks (trivia answering, estimation), chess involves:
 \begin{itemize}
-  \item \textbf{High-dimensional state space}: Approximately $10^{47}$ legal positions, making expert heuristics difficult and providing an extensive test dataset.
+  \item \textbf{High-dimensional state space}: Approximately \(10^{47}\) legal positions, making expert heuristics difficult and providing an extensive test dataset.
   \item \textbf{Strategic thinking}: Each player must evaluate not just the next move but plan for responses and counter-responses. This task allows deliberation to express emerging strategies.
   \item \textbf{Objective evaluation}: The outcome of a game is unambiguous, and thanks to modern engines, each move can be evaluated with precise numerical scoring. The performance level of a crowd can be estimated with arbitrary precision.
   \item \textbf{Cultural significance}: Chess remains a synecdoche for intelligence. Both humans and algorithms are expected to demonstrate competence at this task, providing abundant documentation and research literacy.
 \end{itemize}
 
 
-To evaluate the level of a chess player the comunity mainly rely on a number called the ELO.
-Given two players with Elo ratings $\text{Elo}_A$ and $\text{Elo}_B$, the expected score (probability of A winning) is:
+To evaluate the level of a chess player the community mainly rely on a number called the Elo.
+Given two players with Elo ratings \(\text{Elo}_A\) and \(\text{Elo}_B\), the expected score (probability of A winning) is:
 \begin{equation}
-\label{eqn:expected}
-E_A = \frac{1}{1 + 10^{(\text{Elo}_B - \text{Elo}_A) / 400}}
+  \label{eqn:expected}
+  E_A = \frac{1}{1 + 10^{(\text{Elo}_B - \text{Elo}_A) / 400}}
 \end{equation}
 This is the standard Elo formula, calibrated for chess~\cite{elo1978}.
 
@@ -213,15 +212,18 @@ In practical play, Maia replicates human decision-making nearly indistinguishabl
 \subsubsection{Large Language Models}
 
 Recent work demonstrates that Large Language Models (LLMs) trained on chess game transcriptions can develop emergent internal representations of board state~\cite{karvonen2024}.
-This representation can be altered afecting the move predicted by the LLM.
+This representation can be altered affecting the move predicted by the LLM.
 This represent a fundamentally different paradigm.
 They make decisions based on pattern recognition from training data, not explicit search or neural evaluation.
-Move quality is unstable and depends on a miriad of parameters (model, prompt with PGN notation, board representation, move history) that can be hard to replicate or interpret.
+Move quality is unstable and depends on a myriad of parameters (model, prompt with PGN notation, board representation, move history) that can be hard to replicate or interpret.
 
-[TODO add paragraph about https://arxiv.org/pdf/2306.09983]
+% TODO: Add paragraph about relevant arxiv work
+% https://arxiv.org/pdf/2306.09983
 
-Carlini showed that GPT-3.5-turbo-instruct can achieve a playing strength of roughly 1,788 Elo under specific conditions~\cite{carlini2023}.
-Dynomight systematically evaluated multiple LLM variants, finding that this success can partialy be replicated in newer chat orriented model given specific prompts~\cite{Dynomight2024} [TODO add citation https://dynomight.net/more-chess/].
+% Carlini showed that GPT-3.5-turbo-instruct can achieve a playing strength of roughly 1,788 Elo under specific conditions~\cite{carlini2023}.
+% Dynomight systematically evaluated multiple LLM variants, finding that this success can partially be replicated in newer chat oriented model given specific prompts~\cite{Dynomight2024}.
+% TODO: Add citation for dynomight.net work
+% https://dynomight.net/more-chess/
 More recent transformer-based models have achieved grandmaster-level performance when trained directly on game transcriptions~\cite{schrittwieser2024}.
 
 For ensemble experiments, LLMs offer the highest cognitive diversity and potential for open deliberation, but also present the most challenging engineering requirements (API management, prompt optimization, legal move filtering).
@@ -231,14 +233,14 @@ For ensemble experiments, LLMs offer the highest cognitive diversity and potenti
 Carvalho et al.\ studied majority voting among homogeneous groups of checkers engines.
 They found that group performance improves roughly logarithmically with group size, while outcome variance decreases~\cite{carvalho2017}.
 
-[TODO add a section with
-* **[Majority Voting in Chess (Scholar)](https://link.springer.com/chapter/10.1007/978-3-319-09165-5_17)**
-* **Title:** Further investigations of 3-member simple majority voting for chess
-* **Summary:** Research investigating whether a simple majority vote of three chess engines provides better move selection than a single engine, touching on ensemble methods in AI.]
+% TODO: Add section on Majority Voting in Chess from
+% https://link.springer.com/chapter/10.1007/978-3-319-09165-5_17
+% Further investigations of 3-member simple majority voting for chess
+% Research on ensemble methods in AI for chess
 
 \section{Methodology and Framework: ChessLab}
 
-[Section to be completed in next revision]
+%  [Section to be completed in next revision]
 
 \subsection{System Architecture}
 
@@ -281,7 +283,7 @@ Post-game analysis computes:
   \item Win rate and draw rate across opponent strengths.
   \item Confidence intervals via bootstrap resampling.
   \item Move accuracy (correlation between engine move and best move).
-  \item Significance testing (two-sample $t$-test, Fisher's exact test for win rates).
+  \item Significance testing (two-sample \(t\)-test, Fisher's exact test for win rates).
 \end{itemize}
 
 \subsection{Elo Rating Estimation}
@@ -290,9 +292,9 @@ Post-game analysis computes:
 To compare ensembles against single engines and to Fouloscopie's human crowd, we estimate Elo ratings using the methods provided:
 
 \subsubsection{Single-Opponent Estimation}
-If an ensemble plays $n$ games against a single opponent of known Elo, and achieves mean score $s$ (where 1 = win, 0.5 = draw, 0 = loss), the ensemble Elo is:
+If an ensemble plays \(n\) games against a single opponent of known Elo, and achieves mean score \(s\) (where 1 = win, 0.5 = draw, 0 = loss), the ensemble Elo is:
 \begin{equation}
-\text{Elo}_{\text{ensemble}} = \text{Elo}_{\text{opponent}} + 400 \log_{10}\left(\frac{s}{1 - s}\right)
+  \text{Elo}_{\text{ensemble}} = \text{Elo}_{\text{opponent}} + 400 \log_{10}\left(\frac{s}{1 - s}\right)
 \end{equation}
 
 This formula is derived by inverting Equation~\ref{eqn:expected}, ensuring that the expected score at the estimated Elo matches the observed score.
@@ -300,9 +302,9 @@ This formula is derived by inverting Equation~\ref{eqn:expected}, ensuring that 
 \subsubsection{Multiple-Opponent Estimation}
 If an ensemble plays against multiple opponents at different Elos, we fit a single Elo value that minimizes weighted squared error between observed and expected scores:
 \begin{equation}
-\hat{\text{Elo}}_{\text{ensemble}} = \arg\min_{\text{Elo}} \sum_{i=1}^{m} w_i \left( s_i - E(Elo, \text{Elo}_i) \right)^2
+  \hat{\text{Elo}}_{\text{ensemble}} = \arg\min_{\text{Elo}} \sum_{i=1}^{m} w_i \left( s_i - E(Elo, \text{Elo}_i) \right)^2
 \end{equation}
-where $s_i$ is the mean score against opponent $i$, $\text{Elo}_i$ is opponent $i$'s rating, and $w_i$ is the weight (typically the number of games against opponent $i$, normalized). This optimization is solved via bounded scalar minimization ($250 \leq \text{Elo} \leq 3000$) with precision 0.1 Elo points.
+where \(s_i\) is the mean score against opponent \(i\), \(\text{Elo}_i\) is opponent \(i\)'s rating, and \(w_i\) is the weight (typically the number of games against opponent \(i\), normalized). This optimization is solved via bounded scalar minimization (\(250 \leq \text{Elo} \leq 3000\)) with precision 0.1 Elo points.
 
 This approach is robust to mild non-transitivity in the results (e.g., A beats B, B beats C, but C sometimes beats A), and the fitting naturally produces confidence intervals via bootstrap resampling of game outcomes.
 
@@ -317,19 +319,19 @@ Each engine in an ensemble receives equal wall-clock time per move. For Stockfis
 All random seeds are fixed and recorded. Stockfish's \texttt{UCI\_Threads} is set to 1 (single thread) to ensure reproducibility across machines. Game variations are introduced through algorithm randomization (Stockfish's evaluation perturbation, Maia's sampling), not external noise.
 
 \subsubsection{Statistical Power}
-Experiments use sufficient games to detect meaningful effects (power = 0.8, $\alpha = 0.05$). Based on typical chess game outcomes:
+Experiments use sufficient games to detect meaningful effects (power = 0.8, \(\alpha = 0.05\)). Based on typical chess game outcomes:
 \begin{itemize}
-  \item Comparing single-engine vs.\ $N$-engine ensemble: $n = 50$ games.
-  \item Comparing two ensembles: $n = 100$ games.
-  \item Measuring performance across strength range: $n = 20$ games per opponent level, $\approx 200$ games total.
+  \item Comparing single-engine vs.\ \(N\)-engine ensemble: \(n = 50\) games.
+  \item Comparing two ensembles: \(n = 100\) games.
+  \item Measuring performance across strength range: \(n = 20\) games per opponent level, \(\approx 200\) games total.
 \end{itemize}
 
 \subsubsection{Opponent Strength Variation}
-Opponents span at least Elo 1200--2200 (amateur to master strength), with intermediate steps at $\approx 200$ Elo increments. This enables fitting performance curves and testing predictions from collective intelligence theory.
+Opponents span at least Elo 1200--2200 (amateur to master strength), with intermediate steps at \(\approx 200\) Elo increments. This enables fitting performance curves and testing predictions from collective intelligence theory.
 
 \section{Experiments}
 
-[Section to be completed in next revision]
+%  [Section to be completed in next revision]
 
 This section outlines 10 key experiments, prioritized by importance and feasibility. Results will be presented in follow-up publications as experiments complete. For each experiment, we specify:
 \begin{itemize}
@@ -346,18 +348,18 @@ Simple baseline establishing that ensemble voting provides measurable advantage 
 
 \subsubsection{Design}
 \begin{itemize}
-  \item \textbf{Independent variable}: Ensemble size $N \in \{1, 3, 5, 10, 20\}$.
+  \item \textbf{Independent variable}: Ensemble size \(N \in \{1, 3, 5, 10, 20\}\).
   \item \textbf{Engine configuration}: All Stockfish at Elo 1600 (intermediate strength), UCI\_Elo limiting enabled.
   \item \textbf{Opponents}: Stockfish at Elo 1400, 1600, 1800 (opponent weaker, equal, stronger).
-  \item \textbf{Games per condition}: 50 games (sufficient to detect win-rate difference of $\approx 5\%$, $p < 0.05$).
+  \item \textbf{Games per condition}: 50 games (sufficient to detect win-rate difference of \(\approx 5\%\), \(p < 0.05\)).
 \end{itemize}
 
 \subsubsection{Hypothesis}
-Ensemble win rate will increase with ensemble size, following a curve of diminishing returns. Mathematically, if individual engines have variance $\sigma^2$ and uncorrelated errors, the ensemble variance should decrease as $\sigma^2 / N$. This predicts:
+Ensemble win rate will increase with ensemble size, following a curve of diminishing returns. Mathematically, if individual engines have variance \(\sigma^2\) and uncorrelated errors, the ensemble variance should decrease as \(\sigma^2 / N\). This predicts:
 \begin{itemize}
-  \item $N=1$: baseline win rate (e.g., 45\%).
-  \item $N=3$: win rate increase $\propto \sqrt{3} \approx 1.7$ (error reduction), e.g., 48\% win rate.
-  \item $N \to \infty$: plateau as opponents' skill becomes limiting factor.
+  \item \(N=1\): baseline win rate (e.g., 45\%).
+  \item \(N=3\): win rate increase \(\propto \sqrt{3} \approx 1.7\) (error reduction), e.g., 48\% win rate.
+  \item \(N \to \infty\): plateau as opponents' skill becomes limiting factor.
 \end{itemize}
 
 \subsubsection{Metrics}
@@ -368,7 +370,7 @@ Ensemble win rate will increase with ensemble size, following a curve of diminis
 \end{itemize}
 
 \subsubsection{Analysis}
-Logistic regression of win rate vs.\ ensemble size. Fitting a power law: $\text{WinRate}(N) = a + b \log(N)$ or $\text{WinRate}(N) = c - d / N$. Bootstrap confidence intervals on Elo estimates.
+Logistic regression of win rate vs.\ ensemble size. Fitting a power law: \(\text{WinRate}(N) = a + b \log(N)\) or \(\text{WinRate}(N) = c - d / N\). Bootstrap confidence intervals on Elo estimates.
 
 \subsection{Experiment 2: Heterogeneous Elo Ensembles (Testing Page's Diversity Theorem)}
 
@@ -378,10 +380,10 @@ Test whether diversity in agent capability (not just replication) improves ensem
 \subsubsection{Design}
 \begin{itemize}
   \item \textbf{Independent variables}:
-    \begin{itemize}
-      \item Ensemble composition: $\{W, M, S\}$ representing weak (1400 Elo), medium (1600 Elo), and strong (1800 Elo) Stockfish.
-      \item Ratios tested: 100\% W, 100\% M, 100\% S (homogeneous baselines); 50\% W + 50\% S, 75\% W + 25\% S, 33\% W + 33\% M + 33\% S (heterogeneous).
-    \end{itemize}
+        \begin{itemize}
+          \item Ensemble composition: \(\{W, M, S\}\) representing weak (1400 Elo), medium (1600 Elo), and strong (1800 Elo) Stockfish.
+          \item Ratios tested: 100\% W, 100\% M, 100\% S (homogeneous baselines); 50\% W + 50\% S, 75\% W + 25\% S, 33\% W + 33\% M + 33\% S (heterogeneous).
+        \end{itemize}
   \item \textbf{Ensemble size}: Fixed at 5 engines per ensemble.
   \item \textbf{Opponents}: Fixed at Elo 1600 (to test scaling).
   \item \textbf{Games}: 100 games per condition.
@@ -392,7 +394,7 @@ Ensemble performance follows an inverse-U relationship with diversity:
 \begin{itemize}
   \item Pure weak ensemble (100\% 1400): Low performance (e.g., 25\% win rate).
   \item Pure strong ensemble (100\% 1800): High performance (e.g., 75\% win rate).
-  \item Optimally diverse ensemble (predicted $\approx 30$--40\% weak agents): Superior to homogeneous weak but inferior to homogeneous strong. However, the diversity bonus may make heterogeneous weak ensemble ($\approx 40\%$ weak, 60\% strong) outperform pure weak or weak-medium blends.
+  \item Optimally diverse ensemble (predicted \(\approx 30\)--40\% weak agents): Superior to homogeneous weak but inferior to homogeneous strong. However, the diversity bonus may make heterogeneous weak ensemble (\(\approx 40\%\) weak, 60\% strong) outperform pure weak or weak-medium blends.
 \end{itemize}
 
 \subsubsection{Metrics}
@@ -414,10 +416,10 @@ Test whether diversity in \emph{learned} decision-making (Maia) produces similar
 \subsubsection{Design}
 \begin{itemize}
   \item \textbf{Independent variable}: Maia skill-level composition.
-    \begin{itemize}
-      \item Homogeneous: 5x Maia-1600, 5x Maia-1400, etc.
-      \item Heterogeneous: Mix of Maia-1400, Maia-1600, Maia-1800.
-    \end{itemize}
+        \begin{itemize}
+          \item Homogeneous: 5x Maia-1600, 5x Maia-1400, etc.
+          \item Heterogeneous: Mix of Maia-1400, Maia-1600, Maia-1800.
+        \end{itemize}
   \item \textbf{Opponents}: Maia at Elo 1400, 1600, 1800 (to ensure fair comparison---playing against own architecture).
   \item \textbf{Games}: 100 per condition.
 \end{itemize}
@@ -437,7 +439,7 @@ Maia ensembles should exhibit similar diversity effects to Stockfish:
 \end{itemize}
 
 \subsubsection{Analysis}
-Comparison of heterogeneous vs.\ homogeneous win rates (two-sample $t$-test). Estimation of diversity bonus in Elo points.
+Comparison of heterogeneous vs.\ homogeneous win rates (two-sample \(t\)-test). Estimation of diversity bonus in Elo points.
 
 \subsection{Experiment 4: Voting Strategy Comparison}
 
@@ -447,12 +449,12 @@ Optimize the aggregation rule. Does weighted voting outperform simple majority? 
 \subsubsection{Design}
 \begin{itemize}
   \item \textbf{Independent variable}: Voting rule.
-    \begin{itemize}
-      \item Simple majority (baseline).
-      \item Weighted by Elo: Each engine vote counts for $10^{(\text{Elo} - 1600) / 400}$.
-      \item Weighted by evaluation score: Each engine vote counts for $\max(0, \text{evaluation\_score} / 5)$ (normalized).
-      \item Surprisingly popular (LLM/future): Prediction-aware voting.
-    \end{itemize}
+        \begin{itemize}
+          \item Simple majority (baseline).
+          \item Weighted by Elo: Each engine vote counts for \(10^{(\text{Elo} - 1600) / 400}\).
+          \item Weighted by evaluation score: Each engine vote counts for \(\max(0, \text{evaluation\_score} / 5)\) (normalized).
+          \item Surprisingly popular (LLM/future): Prediction-aware voting.
+        \end{itemize}
   \item \textbf{Ensemble}: Fixed heterogeneous Stockfish ensemble (1400, 1600, 1800, repeated).
   \item \textbf{Opponents}: Stockfish 1600, 1800.
   \item \textbf{Games}: 100 per condition.
@@ -460,10 +462,10 @@ Optimize the aggregation rule. Does weighted voting outperform simple majority? 
 
 \subsubsection{Hypothesis}
 \begin{itemize}
-  \item Simple majority: Baseline ($W_0 = 50\%$).
-  \item Weighted Elo: Moderate improvement ($W_E \approx 52\%$) from reducing weak-engine influence.
-  \item Weighted evaluation: Small improvement ($W_V \approx 51\%$) but risk of overfitting to position score.
-  \item Surprisingly popular: Potential improvement ($W_S \approx 53\%$) if engines are overconfident or diverse in confidence.
+  \item Simple majority: Baseline (\(W_0 = 50\%\)).
+  \item Weighted Elo: Moderate improvement (\(W_E \approx 52\%\)) from reducing weak-engine influence.
+  \item Weighted evaluation: Small improvement (\(W_V \approx 51\%\)) but risk of overfitting to position score.
+  \item Surprisingly popular: Potential improvement (\(W_S \approx 53\%\)) if engines are overconfident or diverse in confidence.
 \end{itemize}
 
 \subsubsection{Metrics}
@@ -485,10 +487,10 @@ Test ensembles combining fundamentally different architectures (search-based, ne
 \begin{itemize}
   \item \textbf{Ensemble composition}: Stockfish-1600 + Maia-1600 + simple-heuristic-1600 (matched Elo when possible).
   \item \textbf{Ensemble variants}:
-    \begin{itemize}
-      \item 5 engines: 2 Stockfish, 2 Maia, 1 heuristic.
-      \item 3 engines: 1 Stockfish, 1 Maia, 1 heuristic (minimal ensemble).
-    \end{itemize}
+        \begin{itemize}
+          \item 5 engines: 2 Stockfish, 2 Maia, 1 heuristic.
+          \item 3 engines: 1 Stockfish, 1 Maia, 1 heuristic (minimal ensemble).
+        \end{itemize}
   \item \textbf{Opponents}: Stockfish 1400, 1600, 1800.
   \item \textbf{Games}: 100 per condition.
 \end{itemize}
@@ -504,7 +506,7 @@ Cross-architecture ensembles achieve higher Elo than same-architecture ensembles
 \end{itemize}
 
 \subsubsection{Analysis}
-Comparison to single-best-engine baseline (Stockfish-1600) via two-sample $t$-test. Elo difference estimation.
+Comparison to single-best-engine baseline (Stockfish-1600) via two-sample \(t\)-test. Elo difference estimation.
 
 \subsection{Experiment 6: Fouloscopie Reproduction (Main Contribution)}
 
@@ -515,15 +517,15 @@ Directly reproduce the human Fouloscopie results using artificial ensembles. Thi
 \begin{itemize}
   \item \textbf{Crowd composition}: Heterogeneous Stockfish ensemble (sizes: 10, 30, 50 agents), with Elo distribution spanning 1200--2000 (mimicking human skill variation in Fouloscopie).
   \item \textbf{Opponents}: Maia models at Elo 1200, 1400, 1600, 1800, 1900 (spanning weak to very strong).
-  \item \textbf{Games}: 20 games per (crowd size, opponent) combination, total $\approx 300$ games.
+  \item \textbf{Games}: 20 games per (crowd size, opponent) combination, total \(\approx 300\) games.
   \item \textbf{Voting rule}: Simple majority (matching Fouloscopie).
 \end{itemize}
 
 \subsubsection{Hypothesis}
 Artificial crowds achieve comparable Elo to human crowds when ensemble size and diversity match. Specifically:
 \begin{itemize}
-  \item Human Fouloscopie crowd: Estimated Elo $\approx 2200$ (to be verified from dataset) with win rate $>60\%$ across all opponent levels.
-  \item Artificial crowd (50 Stockfish agents, mixed Elo): Estimated Elo $\geq 2000$ (90\% of human level) across all opponent strengths.
+  \item Human Fouloscopie crowd: Estimated Elo \(\approx 2200\) (to be verified from dataset) with win rate \(>60\%\) across all opponent levels.
+  \item Artificial crowd (50 Stockfish agents, mixed Elo): Estimated Elo \(\geq 2000\) (90\% of human level) across all opponent strengths.
   \item The ensemble maintains stable performance across opponent range, suggesting robust collective intelligence.
 \end{itemize}
 
@@ -536,7 +538,7 @@ Artificial crowds achieve comparable Elo to human crowds when ensemble size and 
 \end{itemize}
 
 \subsubsection{Analysis}
-Curve fitting: Logistic model of win rate vs.\ opponent Elo. Elo estimation via bounded optimization (described in Section~\ref{subsec:elo}). Hypothesis test: Is artificial crowd Elo statistically indistinguishable from human crowd Elo? (Two-sample $t$-test on Elo estimates, with resampling).
+Curve fitting: Logistic model of win rate vs.\ opponent Elo. Elo estimation via bounded optimization (described in Section~\ref{subsec:elo}). Hypothesis test: Is artificial crowd Elo statistically indistinguishable from human crowd Elo? (Two-sample \(t\)-test on Elo estimates, with resampling).
 
 \subsection{Experiment 7: Social Influence Analog (Policy Transparency)}
 
@@ -546,10 +548,10 @@ Fouloscopie found that visible polling (showing vote counts before final voting)
 \subsubsection{Design}
 \begin{itemize}
   \item \textbf{Independent variable}: Information visibility.
-    \begin{itemize}
-      \item \texttt{Hidden}: Engines vote sequentially; no engine sees others' votes before committing.
-      \item \texttt{Visible}: After each engine commits, the cumulative vote count is revealed to remaining engines; they can adjust their strategy.
-    \end{itemize}
+        \begin{itemize}
+          \item \texttt{Hidden}: Engines vote sequentially; no engine sees others' votes before committing.
+          \item \texttt{Visible}: After each engine commits, the cumulative vote count is revealed to remaining engines; they can adjust their strategy.
+        \end{itemize}
   \item \textbf{Ensemble}: 5 Stockfish agents at Elo 1600.
   \item \textbf{Opponents}: Stockfish at 1400, 1600, 1800.
   \item \textbf{Games}: 100 per condition.
@@ -569,7 +571,7 @@ Fouloscopie found that visible polling (showing vote counts before final voting)
 \end{itemize}
 
 \subsubsection{Analysis}
-Two-way ANOVA (visibility $\times$ opponent strength) on win rate. Interaction plot: Does visibility effect reverse with opponent strength?
+Two-way ANOVA (visibility \(\times\) opponent strength) on win rate. Interaction plot: Does visibility effect reverse with opponent strength?
 
 \subsection{Experiment 8: Scaling Laws (Crowd Size)}
 
@@ -578,7 +580,7 @@ Characterize performance as a function of ensemble size. Are there diminishing r
 
 \subsubsection{Design}
 \begin{itemize}
-  \item \textbf{Independent variable}: Ensemble size $N \in \{1, 3, 5, 10, 20, 50, 100\}$.
+  \item \textbf{Independent variable}: Ensemble size \(N \in \{1, 3, 5, 10, 20, 50, 100\}\).
   \item \textbf{Ensemble}: Heterogeneous Stockfish (representative mix of Elo 1200--2000).
   \item \textbf{Opponents}: Fixed at Elo 1600 (pivot point).
   \item \textbf{Games}: 50 per size.
@@ -587,22 +589,22 @@ Characterize performance as a function of ensemble size. Are there diminishing r
 \subsubsection{Hypothesis}
 Performance scales logarithmically or as a power law:
 \begin{equation}
-\text{Elo}(N) = \text{Elo}(1) + c \log(N) + \epsilon
+  \text{Elo}(N) = \text{Elo}(1) + c \log(N) + \epsilon
 \end{equation}
 or
 \begin{equation}
-\text{Elo}(N) = a - b N^{-\alpha}
+  \text{Elo}(N) = a - b N^{-\alpha}
 \end{equation}
-with diminishing returns (slowing improvement at large $N$).
+with diminishing returns (slowing improvement at large \(N\)).
 
 \subsubsection{Metrics}
 \begin{itemize}
   \item Estimated Elo vs.\ ensemble size.
-  \item Goodness-of-fit: $R^2$ for power law and logarithmic models.
+  \item Goodness-of-fit: \(R^2\) for power law and logarithmic models.
 \end{itemize}
 
 \subsubsection{Analysis}
-Non-linear least-squares fitting of both models. AIC/BIC model comparison. Extrapolation: At what size do we expect $\approx 90\%$ of asymptotic performance gain?
+Non-linear least-squares fitting of both models. AIC/BIC model comparison. Extrapolation: At what size do we expect \(\approx 90\%\) of asymptotic performance gain?
 
 \subsection{Experiment 9: LLM Ensemble (Orthogonal Diversity, Future Work)}
 
@@ -620,8 +622,8 @@ Large Language Models represent a distinct paradigm. Testing them in ensembles a
 
 \subsubsection{Hypothesis}
 \begin{itemize}
-  \item Single LLM: Expected Elo $\approx 1200$ (untrained/weakly fine-tuned models).
-  \item LLM ensemble: Elo $\approx 1350$ (diversity provides $\approx 150$ Elo improvement, but still weaker than Stockfish).
+  \item Single LLM: Expected Elo \(\approx 1200\) (untrained/weakly fine-tuned models).
+  \item LLM ensemble: Elo \(\approx 1350\) (diversity provides \(\approx 150\) Elo improvement, but still weaker than Stockfish).
   \item Prompt variation: Providing legal-move lists improves ensemble Elo significantly.
 \end{itemize}
 
@@ -643,18 +645,18 @@ Verify that results generalize beyond specific time allocations. Elo ratings in 
 \subsubsection{Design}
 \begin{itemize}
   \item \textbf{Independent variable}: Time control.
-    \begin{itemize}
-      \item Blitz: 3+0 (3 seconds, no increment).
-      \item Rapid: 10+0 (10 seconds).
-      \item Classical: 30+0 (30 seconds) or depth-limited (10 moves, depth 20).
-    \end{itemize}
+        \begin{itemize}
+          \item Blitz: 3+0 (3 seconds, no increment).
+          \item Rapid: 10+0 (10 seconds).
+          \item Classical: 30+0 (30 seconds) or depth-limited (10 moves, depth 20).
+        \end{itemize}
   \item \textbf{Ensemble}: Fixed 5-engine heterogeneous Stockfish.
   \item \textbf{Opponents}: Stockfish 1600.
   \item \textbf{Games}: 50 per time control.
 \end{itemize}
 
 \subsubsection{Hypothesis}
-Ensemble advantage is robust across time controls: relative Elo difference between ensemble and single engine remains constant ($\approx 50$--100 Elo) regardless of time control.
+Ensemble advantage is robust across time controls: relative Elo difference between ensemble and single engine remains constant (\(\approx 50\)--100 Elo) regardless of time control.
 
 \subsubsection{Metrics}
 \begin{itemize}
@@ -667,32 +669,32 @@ ANOVA for Elo across time controls. Test null hypothesis: Ensemble advantage is 
 
 \section{Results}
 
-[Section to be completed in next revision]
+%  [Section to be completed in next revision]
 
 
 This section outlines expected findings based on theory and preliminary understanding. These are \textbf{placeholders} to be replaced with actual experimental results.
 
 \subsection{Exp 1: Homogeneous Ensembles}
 
-\textbf{PLACEHOLDER}: We expect win rate to increase from $\approx 50\%$ (single engine) to $\approx 52\%$ ($N=3$), $\approx 53\%$ ($N=5$), with diminishing returns at larger $N$. Corresponding Elo gain: $[BASELINE\_ELO] \to [BASELINE\_ELO + 50] \to [BASELINE\_ELO + 80]$, approaching asymptote. **Statistical significance**: Ensemble of 5 will be significantly better than single engine ($p < 0.05$).
+\textbf{PLACEHOLDER}: We expect win rate to increase from \(\approx 50\%\) (single engine) to \(\approx 52\%\) (\(N=3\)), \(\approx 53\%\) (\(N=5\)), with diminishing returns at larger \(N\). Corresponding Elo gain: \([BASELINE\_ELO] \to [BASELINE\_ELO + 50] \to [BASELINE\_ELO + 80]\), approaching asymptote. **Statistical significance**: Ensemble of 5 will be significantly better than single engine (\(p < 0.05\)).
 
 \subsection{Exp 2: Heterogeneous Elo}
 
-\textbf{PLACEHOLDER}: Optimal diversity at $\approx 30$--40\% weak agents. Expected Elo:
+\textbf{PLACEHOLDER}: Optimal diversity at \(\approx 30\)--40\% weak agents. Expected Elo:
 \begin{itemize}
-  \item 100\% weak (1400): $[ELO\_1400]$ (homogeneous baseline).
-  \item 50\% weak + 50\% strong: $[ELO\_MID] \approx \text{Average}$ or slightly above (diversity bonus).
-  \item 33\% weak + 33\% mid + 33\% strong: $[ELO\_OPTIMAL]$ (predicted to be highest).
-  \item 100\% strong (1800): $[ELO\_1800]$ (homogeneous strong baseline).
+  \item 100\% weak (1400): \([Elo\_1400]\) (homogeneous baseline).
+  \item 50\% weak + 50\% strong: \([Elo\_MID] \approx \text{Average}\) or slightly above (diversity bonus).
+  \item 33\% weak + 33\% mid + 33\% strong: \([Elo\_OPTIMAL]\) (predicted to be highest).
+  \item 100\% strong (1800): \([Elo\_1800]\) (homogeneous strong baseline).
 \end{itemize}
 
 \subsection{Exp 6: Fouloscopie Reproduction}
 
-\textbf{PLACEHOLDER}: Artificial crowd (50 heterogeneous Stockfish) estimated Elo: [CROWDFISH\_ELO\_EST] (to compare to human Fouloscopie crowd Elo of [HUMAN\_CROWD\_ELO] from dataset). Win rate curve: [CURVE\_DESCRIPTION]. Confidence interval on Elo: $[ELO\_EST] \pm [MARGIN\_ERROR]$.
+\textbf{PLACEHOLDER}: Artificial crowd (50 heterogeneous Stockfish) estimated Elo: [CROWDFISH\_ELO\_EST] (to compare to human Fouloscopie crowd Elo of [HUMAN\_CROWD\_ELO] from dataset). Win rate curve: [CURVE\_DESCRIPTION]. Confidence interval on Elo: \([Elo\_EST] \pm [MARGIN\_ERROR]\).
 
 \section{Discussion and Roadmap}
 
-[Section to be completed in next revision]
+%  [Section to be completed in next revision]
 
 While this paper focuses on framework and methodology, we can anticipate key insights:
 
@@ -725,7 +727,7 @@ Page's Diversity Theorem assumes independence; in ensemble voting, engines share
 
 \section{Conclusion}
 
-[Section to be completed in next revision]
+%  [Section to be completed in next revision]
 
 This paper introduces ChessLab, a framework for studying collective intelligence in games through systematically engineered ensemble experiments. By replacing human crowds with controlled, diverse AI systems, we gain the ability to:
 

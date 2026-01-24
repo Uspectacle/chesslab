@@ -18,7 +18,7 @@ class PromptVariables:
     """Variables available for prompt template formatting.
 
     Attributes:
-        elo: Expected ELO rating
+        elo: Expected Elo rating
         date: Current date/time
         fen: Current board position in FEN notation
         legal_moves: Comma-separated list of legal moves
@@ -41,7 +41,7 @@ class PromptVariables:
 
         Args:
             board: Current chess board state
-            elo: Expected ELO rating
+            elo: Expected Elo rating
 
         Returns:
             PromptVariables instance

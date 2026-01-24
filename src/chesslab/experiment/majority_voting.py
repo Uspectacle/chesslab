@@ -47,7 +47,7 @@ if __name__ == "__main__":
         expected_elos.sort()
         true_mean = int(sum(expected_elos) / len(expected_elos))
         true_std = int(estimate_gaussian_std(expected_elos))
-        report = f"[seed={seed}] Stockfish Gaussian {true_mean} (+/- {true_std}) ELO x {num_samples}\n\n"
+        report = f"[seed={seed}] Stockfish Gaussian {true_mean} (+/- {true_std}) Elo x {num_samples}\n\n"
         report += ", ".join([str(expected_elo) for expected_elo in expected_elos])
         with open(crowd_path, "w", encoding="utf-8") as f:
             f.write(report)

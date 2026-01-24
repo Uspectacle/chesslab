@@ -40,7 +40,7 @@ class LlmEngine(BaseEngine):
     - Chain-of-thought reasoning
 
     Template Variables Available:
-    - {elo}: Expected ELO rating
+    - {elo}: Expected Elo rating
     - {date}: Current date/time
     - {fen}: Current board position in FEN notation
     - {legal_moves}: Comma-separated list of legal moves

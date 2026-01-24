@@ -147,8 +147,8 @@ class GameAnalysis:
             f"Number of move: {len(self.board.move_stack)}\n"
             f"Average centipawn loss for white: {self.white_average_centipawn_loss}\n"
             f"Average centipawn loss for black: {self.black_average_centipawn_loss}\n"
-            f"White expected ELO: {self.game.white_player.expected_elo}\n"
-            f"Black expected ELO: {self.game.black_player.expected_elo}\n"
+            f"White expected Elo: {self.game.white_player.expected_elo}\n"
+            f"Black expected Elo: {self.game.black_player.expected_elo}\n"
             f"Expected probability of white wining: {expected_score(self.game.white_player.expected_elo, self.game.black_player.expected_elo)}"
         )
 
