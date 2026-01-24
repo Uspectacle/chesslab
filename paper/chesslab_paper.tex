@@ -139,10 +139,6 @@ In summary, collective intelligence requires:
 (4) appropriate aggregation mechanisms, and possibly
 (5) calibration of confidence when weighting is available.
 
-% TODO: Add passage for Making the wisdom of crowds efficient
-% https://osf.io/preprints/psyarxiv/j9t6p_v1
-% Methods to improve the wisdom of crowds by incorporating confidence levels
-
 \subsection{Collective Intelligence in Chess}
 
 Chess provides an ideal laboratory for studying collective decision-making in complex, sequential tasks.
@@ -211,32 +207,29 @@ In practical play, Maia replicates human decision-making nearly indistinguishabl
 
 \subsubsection{Large Language Models}
 
-Recent work demonstrates that Large Language Models (LLMs) trained on chess game transcriptions can develop emergent internal representations of board state~\cite{karvonen2024}.
-This representation can be altered affecting the move predicted by the LLM.
-This represent a fundamentally different paradigm.
-They make decisions based on pattern recognition from training data, not explicit search or neural evaluation.
-Move quality is unstable and depends on a myriad of parameters (model, prompt with PGN notation, board representation, move history) that can be hard to replicate or interpret.
+Recent work demonstrates that Large Language Models (LLMs) trained on chess game transcriptions can develop emergent internal representations of board states~\cite{karvonen2024}.
+These representations can be altered, thereby changing the move predicted by the LLM.
+This represents a fundamentally different paradigm: LLMs make decisions based on statistical pattern recognition from training data rather than explicit search or neural evaluation.
+Their move quality is unstable and depends on a myriad of factors (model architecture, PGN-based prompting, board representation, move history), which are often difficult to replicate or interpret.
 
-% TODO: Add paragraph about relevant arxiv work
-% https://arxiv.org/pdf/2306.09983
-
-% Carlini showed that GPT-3.5-turbo-instruct can achieve a playing strength of roughly 1,788 Elo under specific conditions~\cite{carlini2023}.
-% Dynomight systematically evaluated multiple LLM variants, finding that this success can partially be replicated in newer chat oriented model given specific prompts~\cite{Dynomight2024}.
-% TODO: Add citation for dynomight.net work
-% https://dynomight.net/more-chess/
+Carlini showed that \texttt{gpt-3.5-turbo-instruct} can achieve a playing strength of roughly 1,788 Elo under specific conditions~\cite{carlini2023}.
 More recent transformer-based models have achieved grandmaster-level performance when trained directly on game transcriptions~\cite{schrittwieser2024}.
 
-For ensemble experiments, LLMs offer the highest cognitive diversity and potential for open deliberation, but also present the most challenging engineering requirements (API management, prompt optimization, legal move filtering).
+Although modern chat-oriented LLMs appear to lag behind, Dynomight~\cite{dynomight2024} demonstrated that prompting strategies—such as requiring the model to regenerate the move history before outputting the next move—can dramatically improve their move quality.
+These results suggest that apparent “unusual” chess behavior in some LLMs may stem less from intrinsic chess competence and more from specific training setups and prompt configurations.
+
+For ensemble experiments, LLMs offer the greatest cognitive diversity and potential for open deliberation, but also present substantial engineering challenges that must be carefully controlled (API management, prompt optimization, legal move filtering).
 
 \subsection{Aggregating Engines}
 
-Carvalho et al.\ studied majority voting among homogeneous groups of checkers engines.
-They found that group performance improves roughly logarithmically with group size, while outcome variance decreases~\cite{carvalho2017}.
+Carvalho et al.~\cite{carvalho2017} studied majority voting among homogeneous groups of checkers engines.
+They found that group performance improves roughly logarithmically with group size, while outcome variance decreases.
 
-% TODO: Add section on Majority Voting in Chess from
-% https://link.springer.com/chapter/10.1007/978-3-319-09165-5_17
-% Further investigations of 3-member simple majority voting for chess
-% Research on ensemble methods in AI for chess
+In chess, Spoerer et al.~\cite{spoerer1999} investigated three-member simple majority voting among engines of varying strength.
+They analyzed how different configurations (e.g., equal-strength engines versus mixtures of stronger and weaker ones) affect ensemble performance and the variance of game outcomes.
+Their results indicate that even very small committees can benefit from majority aggregation, but that gains depend sensitively on the diversity and relative strength of the members, as well as on how ties and disagreements are resolved.
+According to this study, to observe a stronger wisdom-of-crowds effect, one should focus on low-Elo engines with small strength differences, which seems to contradict the diversity assumption.
+Let us test this.
 
 \section{Methodology and Framework: ChessLab}
 
