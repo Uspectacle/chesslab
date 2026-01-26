@@ -37,7 +37,7 @@ A modular, open-source chess engine testing and evaluation framework with Postgr
 ### 2. Clone the Repository
 
 ```bash
-git clone --recurse-submodules <repo-url>
+git clone --recurse-submodules https://github.com/Uspectacle/chesslab.git
 cd chesslab
 ```
 
@@ -308,7 +308,7 @@ Pre-built experimental pipelines:
 
 ### Database Schema
 
-```
+```tree
 players (engine configurations)
 ├── player_options (UCI options, prompts, hyperparameters)
 └── games (match results, metadata)
