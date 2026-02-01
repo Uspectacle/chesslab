@@ -213,7 +213,7 @@ In practical play, Maia replicates human decision-making nearly indistinguishabl
 Recent work demonstrates that Large Language Models (LLMs) trained on chess game transcriptions can develop emergent internal representations of board states~\cite{karvonen2024}.
 These representations can be altered, thereby changing the move predicted by the LLM.
 This represents a fundamentally different paradigm: LLMs make decisions based on statistical pattern recognition from training data rather than explicit search or neural evaluation.
-Their move quality is unstable and depends on a myriad of factors (model architecture, PGN-based prompting, board representation, move history), which are often difficult to replicate or interpret.% TODO add citation for https://arxiv.org/abs/2512.01992
+Their move quality is unstable and depends on a myriad of factors (model architecture, PGN-based prompting, board representation, move history), which are often difficult to replicate or interpret.% TODO add citation for LLM CHESS: Benchmarking Reasoning and Instruction-Following in LLMs through Chess  https://arxiv.org/abs/2512.01992
 
 Carlini showed that \texttt{gpt-3.5-turbo-instruct} can achieve a playing strength of roughly 1,788 Elo under specific conditions~\cite{carlini2023}.
 More recent transformer-based models have achieved grandmaster-level performance when trained directly on game transcriptions~\cite{schrittwieser2024}.
@@ -281,67 +281,101 @@ The PostgreSQL schema is organized around the following core entities:
   \item \textbf{Evaluations}: For a given move, the required engines (player engine or multiple engines in case of a crowd) make an evaluation (in centipawns or similar score).
 \end{itemize}
 
-\subsection{Statistical Analysis Module} % TODO
+\subsection{Statistical Analysis Module}
 
-% After games are completed, a post-game analysis pipeline computes a suite of performance metrics for each engine or ensemble.
-% This module is implemented as a separate component that queries the database, runs analyses, and stores derived statistics.
+ChessLab evaluates engine and ensemble performance through comprehensive statistical analysis at multiple levels of granularity: individual games, pairwise matches, and multi-opponent campaigns.
+The framework implements hypothesis testing procedures to distinguish genuine performance differences from random variation, and provides Elo rating estimation with uncertainty quantification.
 
-% Specifically, the analysis module computes:
+\subsubsection{Per-Game Metrics}
 
-% \begin{itemize}
-%   \item Elo estimation using the procedures described in Section~\ref{subsec:elo}.
-%   \item Win rate and draw rate as a function of opponent strength, aggregated across multiple opponent Elo bins.
-%   \item Bootstrapped confidence intervals on win-rate and Elo estimates, providing uncertainty bands for cross-engine comparisons.\footnote{\url{https://www.sciencedirect.com/science/article/abs/pii/S0169207020300157}}
-%   \item Move accuracy, defined via similarity between each engine’s chosen move and the move a strong reference engine rates as best, along with label-based error counts (e.g., blunders, inaccuracies).\footnote{\url{https://www.sciencedirect.com/science/article/abs/pii/S0950584925000187}}
-%   \item Significance tests such as two-sample \(t\)-tests on continuous scores and Fisher’s exact test on win-rate proportions, to assess whether performance differences between engines or ensembles are statistically meaningful.
-% \end{itemize}
+For each completed game, ChessLab computes both outcome-based and quality-based metrics.
+The outcome is encoded as a score $s \in \{1, 0.5, 0\}$ representing win, draw, or loss respectively.
+Beyond win/loss statistics, we evaluate move quality through centipawn loss analysis, where each move's quality is assessed by comparing the position evaluation before and after the move using Stockfish at depth 10.
 
-% %TODO: Specify exact statistical packages used, multiple-comparison corrections (if any), and criteria for practical vs.
-% statistical significance.
+For a player who made $N$ moves in a game, the average centipawn loss is:
+\begin{equation}
+\text{ACPL} = \frac{1}{N} \sum_{i=1}^{N} |\text{eval}_{\text{before}_i} - \text{eval}_{\text{after}_i}|
+\end{equation}
+where evaluations are reported from the moving player's perspective.
+This metric provides an independent assessment of play quality that complements outcome-based statistics, particularly useful for fast evaluation on specific position.
 
-% \subsection{Elo Rating Estimation}\label{subsec:elo}
+\subsubsection{Elo Rating Estimation}
 
-% To compare ensembles against single engines and against human-crowd Elo estimates (when available, e.g., from Fouloscopie-style experiments), we derive Elo ratings using standard adjustment rules adapted to our experimental setup.\footnote{\url{https://en.wikipedia.org/wiki/Elo_rating_system}}
+ChessLab estimates Elo ratings using the standard logistic model.
+The expected score for a player with rating $R$ against an opponent with rating $R_{\text{opp}}$ is:
+\begin{equation}\label{eqn:expected}
+E(R, R_{\text{opp}}) = \frac{1}{1 + 10^{(R_{\text{opp}} - R)/400}}
+\end{equation}
 
-% \subsubsection{Single-Opponent Estimation}
+\paragraph{Single-Opponent Estimation.}
+When a player achieves mean score $\bar{s}$ over $n$ games against a single opponent with known rating $R_{\text{opp}}$, we invert equation~\eqref{eqn:expected} to obtain:
+\begin{equation}
+\hat{R} = R_{\text{opp}} + 400 \log_{10}\left(\frac{\bar{s}}{1 - \bar{s}}\right)
+\end{equation}
 
-% When an ensemble plays \(n\) games against a single opponent of known Elo, let \(s\) be the ensemble’s mean score per game (1 for a win, 0.5 for a draw, 0 for a loss).
-% Using the standard logistic pairwise-comparison law, the ensemble’s Elo is estimated as
+To avoid numerical issues at the boundaries, we clip observed scores to the range $[\epsilon, 1-\epsilon]$ where $\epsilon = 10^{-9}$, and constrain the final estimate to $[250, 3000]$ Elo.
 
-% \begin{equation}
-% \text{Elo}_{\text{ensemble}} = \text{Elo}_{\text{opponent}} + 400 \log_{10}\left(\frac{s}{1 - s}\right).
-% \end{equation}
+\paragraph{Multiple-Opponent Estimation.}
+When evaluating against $m$ opponents with known ratings $R_1, \ldots, R_m$ and corresponding observed scores $\bar{s}_1, \ldots, \bar{s}_m$ from $n_1, \ldots, n_m$ games, we estimate the player's Elo by minimizing the weighted squared error between observed and expected scores:
+\begin{equation}
+\hat{R} = \arg\min_{R \in [250, 3000]} \sum_{i=1}^{m} w_i {\left(\bar{s}_i - E(R, R_i)\right)}^2
+\end{equation}
+where the weights are normalized as $w_i = n_i / \sum_{j=1}^{m} n_j$.
 
-% This formula inverts the expectation relation~\eqref{eqn:expected}, so that the expected score given the estimated Elo matches the observed score \(s\).
+This objective function is optimized using bounded scalar minimization with a tolerance of 0.1 Elo points.
+The resulting estimate $\hat{R}$ represents the single rating that best explains the ensemble of results across all opponents, accounting for both the strength of each opponent and the number of games played.
 
-% %TODO: Clarify how cases with $s = 0$ or $s = 1$ are handled (e.g., score clipping or Bayesian priors).
+\subsubsection{Statistical Testing}
 
-% \subsubsection{Multiple-Opponent Estimation}
+ChessLab performs hypothesis testing at two levels: single matches against one opponent and ensemble evaluation across multiple opponents.
+Both use the same underlying statistical framework but differ in how mean scores and standard errors are computed.
 
-% In practice, evaluating an engine or ensemble typically requires a diverse set of opponents, so we calibrate its Elo against a ladder of reference engines spanning varying strengths.\footnote{\url{https://www.sciencedirect.com/science/article/abs/pii/S0169207020300157}}
+\paragraph{Single-Match Analysis.}
+A match consists of $n$ games between two fixed players.
+Given individual game scores $s_1, s_2, \ldots, s_n$, the mean score is:
+\begin{equation}
+\bar{s} = \frac{1}{n}\sum_{i=1}^{n} s_i
+\end{equation}
 
-% We consider:
+For an expected score $p$ (derived from Elo ratings via equation~\eqref{eqn:expected}), the standard error is:
+\begin{equation}
+\text{SE}(p) = \sqrt{\frac{p(1-p)}{n}}
+\end{equation}
 
-% \begin{itemize}
-%   \item A collection of Stockfish instances configured to cover roughly 1300--3500 Elo (with primary focus on the 1300--2100 band), using UCI strength-limiting options.\footnote{\url{https://arxiv.org/pdf/2007.02130.pdf}}
-%   \item A ladder of Maia-style models ranging from about 1100 to 1900 Elo, when available.\footnote{\url{https://arxiv.org/pdf/2405.05066.pdf}}
-%   \item For very weak engines, a supplementary set of low-strength opponents or handicapped engines to avoid ceiling effects and saturation, following calibration practices similar to “Elo World”-style procedures.\footnote{\url{https://www.sciencedirect.com/science/article/abs/pii/S0169207020300157}}
-% \end{itemize}
+\paragraph{Multi-Opponent Ensemble Analysis.}
+When evaluating against $m$ opponents with Elo ratings $R_1, R_2, \ldots, R_m$, where match $i$ consists of $n_i$ games with observed mean score $\bar{s}_i$ and expected score $p_i$, we compute weighted ensemble statistics.
 
-% When the ensemble plays against \(m\) distinct opponents at known Elos \(\text{Elo}_i\) with mean score \(s_i\) against opponent \(i\), we fit a single Elo value that minimizes a weighted squared-error loss between observed and expected scores:
+The ensemble observed mean score is:
+\begin{equation}
+\bar{s}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i \bar{s}_i}{N}, \quad \text{where } N = \sum_{i=1}^{m} n_i
+\end{equation}
 
-% \begin{equation}
-% \hat{\text{Elo}}_{\text{ensemble}} = \arg\min_{\text{Elo}} \sum_{i=1}^{m} w_i \left( s_i - E(\text{Elo}, \text{Elo}_i) \right)^2,
-% \end{equation}
+The ensemble expected mean is computed analogously:
+\begin{equation}
+\bar{p}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i p_i}{N}
+\end{equation}
 
-% where \(E(\text{Elo}, \text{Elo}_i)\) is the expected score according to the logistic pairwise model, and each weight \(w_i\) is proportional to the number of games against opponent \(i\) (normalized so that \(\sum_i w_i = 1\)).
-% Optimization is performed via bounded scalar minimization over \(\text{Elo} \in [250, 3000]\) with a precision of 0.1 Elo points.
+To account for heterogeneous expected scores across matches, the standard error of the pooled proportion is:
+\begin{equation}
+\text{SE}_{\text{ensemble}} = \frac{\sqrt{\sum_{i=1}^{m} n_i p_i (1 - p_i)}}{N}
+\end{equation}
 
-% This approach is robust to mild violations of transitivity (for instance, \(A\) beats \(B\), \(B\) beats \(C\), but \(C\) occasionally beats \(A\)), because the least-squares fit averages conflicting outcomes across different matchups.
-% To quantify uncertainty, we pair the fitting procedure with bootstrap resampling over outcome sequences, which yields confidence intervals on \(\hat{\text{Elo}}_{\text{ensemble}}\).\footnote{\url{https://en.wikipedia.org/wiki/Elo_rating_system}}
+This formulation correctly handles cases where different matches have different expected outcomes, which is essential when testing an engine against a ladder of opponents at varying strength levels.
 
-% %TODO: Report typical confidence interval widths for key experiments and discuss how many games are required to achieve a given Elo precision.
+\paragraph{Hypothesis Testing.}
+For both single-match and ensemble analyses, the test statistic is:
+\begin{equation}
+z = \frac{|\bar{s} - p|}{\text{SE}(p)},
+\end{equation}
+where $\bar{s}$ and $p$ represent either the single-match or ensemble values as appropriate.
 
+We automatically select between z-test and t-test based on sample size and expected frequency.
+For single matches, when $np \geq 5$ and $n(1-p) \geq 5$, we use the normal approximation (z-test); otherwise we use the t-distribution with $n-1$ degrees of freedom.
+For ensemble analysis, we apply a conservative check: if $\min_i(n_i p_i) \geq 5$ and $\min_i(n_i (1-p_i)) \geq 5$, we use the z-test; otherwise we use a t-distribution with $N - m$ degrees of freedom.
+
+The two-tailed p-value quantifies the probability of observing results as extreme as $\bar{s}$ under the null hypothesis that the player's true strength matches expectation.
+
+We use this testing framework throughout ChessLab to assign estimated Elo ratings across heterogeneous agent types on a unified scale.
 
 \section{Proof-of-Concept Experiments}
 

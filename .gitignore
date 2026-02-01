@@ -16,3 +16,4 @@ temp
 
 paper/out/*
 !paper/out/*.pdf
+*.DS_Store
