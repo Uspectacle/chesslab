@@ -424,16 +424,22 @@ Columns represent the measured scores obtained in practice across different stre
 
 \subsection{Calibration}
 
-We first evaluate Stockfish to verify that our Elo estimation pipeline recovers its intended strength profile.
-As shown in Figure~\ref{fig:stockfish_calibration}, across these tested points, the estimated Elo values align closely with the nominal calibration, with systematic deviations remaining below \(\pm 100\) Elo points.
-
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
   \includegraphics[width=\columnwidth]{../src/chesslab/experiment/results/verify_stockfish/plot.png}
   \caption{Elo estimation for a range of Stockfish engines}\label{fig:stockfish_calibration}
 \end{figure}
 
+We first evaluate Stockfish to verify that our Elo estimation pipeline recovers its intended strength profile.
+As shown in Figure~\ref{fig:stockfish_calibration}, across these tested points, the estimated Elo values align closely with the nominal calibration, with systematic deviations remaining below \(\pm 100\) Elo points.
+
 \subsection{Stockfish Crowd}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\columnwidth]{../src/chesslab/experiment/results/majority_voting/plot.png}
+  \caption{Performance of a crowd of stockfish with variation on the aggregation methods}\label{fig:majority_voting}
+\end{figure}
 
 We construct an ensemble of 10 Stockfish instances with Gaussian-distributed strength (mean 1550 Elo, standard deviation 178 Elo) and evaluate four aggregation rules against the same three-opponent ladder.
 The crowd composition was: Elo values of 1320, 1320, 1320, 1482, 1585, 1621, 1624, 1647, 1714, 1876.
@@ -453,12 +459,6 @@ Finally, we test three local LLMs with naive prompting:
 Board states were encoded in plain algebraic notation (PAN) with the prompt ``Given the following chess position, what is the best legal move? ''.
 In this setting, the LLM agents failed to win a single game across all opponents, and average loss per move exceeded 1800 centipawns.
 These results highlight both the potential and the challenges of incorporating LLM-based agents into ChessLab: substantial prompt engineering (e.g., move history reconstruction~\cite{dynomight2024}), legality filtering, and domain-specific fine-tuning are required before LLMs can serve as a measurable and reliable member of the crowd.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\columnwidth]{../src/chesslab/experiment/results/majority_voting/plot.png}
-  \caption{Performance of a crowd of stockfish with variation on the aggregation methods}\label{fig:majority_voting}
-\end{figure}
 
 \section{Roadmap}\label{sec:roadmap}
 
