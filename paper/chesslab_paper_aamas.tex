@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% LaTeX Template for AAMAS-2026 (based on sample-sigconf.tex)
-%%% Prepared by the AAMAS-2026 Publication Chairs based on the version from AAMAS-2025. 
+%%% Prepared by the AAMAS-2026 Publication Chairs based on the version from AAMAS-2025.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -11,15 +11,15 @@
 %%% == IMPORTANT ==
 %%% Use the first variant below for the final paper (including author information).
 %%% Use the second variant below to anonymize your submission (no author information shown).
-%%% For further information on anonymity and double-blind reviewing, 
+%%% For further information on anonymity and double-blind reviewing,
 %%% please consult the call for paper information
 %%% https://cyprusconferences.org/aamas2026/submission-instructions/
 
 %%%% For anonymized submission, use this
-\documentclass[sigconf,anonymous]{aamas} 
+\documentclass[sigconf,anonymous]{aamas}
 
 %%%% For camera-ready, use this
-%\documentclass[sigconf]{aamas} 
+% \documentclass[sigconf]{aamas}
 
 
 %%% Load required packages here (note that many are included already).
@@ -37,7 +37,7 @@
 %%% GAIW-2026 copyright block (CHANGED for workshop submission)
 
  \setcopyright{rightsretained}
- \acmConference[GAIW'26]{Appears at the 8th Games, Agents, and Incentives Workshop (GAIW-26). Held as part of the Workshops at the 25th International Conference on Autonomous Agents and Multiagent Systems.}{May 2026}{Paphos, Cyprus}{Armstrong, Curry, Hosseini, Mattei, Tsang, Wąs (Chairs)} 
+ \acmConference[GAIW'26]{Appears at the 8th Games, Agents, and Incentives Workshop (GAIW-26). Held as part of the Workshops at the 25th International Conference on Autonomous Agents and Multiagent Systems.}{May 2026}{Paphos, Cyprus}{Armstrong, Curry, Hosseini, Mattei, Tsang, Wąs (Chairs)}
 \copyrightyear{2026}
 \acmYear{2026}
 \acmDOI{}
@@ -70,20 +70,20 @@
 
 \begin{abstract}
 
-\noindent\textbf{Background:} 
+\noindent\textbf{Background:}
 \emph{Wisdom of crowds} suggests that aggregated decisions of diverse, independent agents often outperform individual experts.
 However, crowds of casual chess players still struggle against strong opponents.
 Recent projects show that the method by which a move is chosen by the crowd can significantly influence their performance.
 
-\noindent\textbf{Objectives and Research Questions:} 
+\noindent\textbf{Objectives and Research Questions:}
 This work investigates whether artificial crowds can exhibit collective intelligence phenomena in chess.
 Key questions include: (1) Can voting ensembles of weak agents defeat stronger opponents? (2) How does diversity composition affect collective performance? (3) What voting mechanisms optimally aggregate engine decisions?
 
-\noindent\textbf{Methods:} 
+\noindent\textbf{Methods:}
 We introduce ChessLab, an open-source framework that replaces human crowds with heterogeneous ensembles of deterministic and learning-based chess engines.
 The system enables reproducible experiments with detailed move-level evaluations and robust Elo estimation across diverse agent types on a unified scale.
 
-\noindent\textbf{Results:} 
+\noindent\textbf{Results:}
 Preliminary experiments show that majority voting among diverse weak engines can approach the performance of the strongest individual member.
 
 \noindent\textbf{Conclusions:}
@@ -119,7 +119,7 @@ This paper presents the framework, experimental methodology, and a research road
 
 \begin{document}
 
-%%% The following commands remove the headers in your paper. For final 
+%%% The following commands remove the headers in your paper. For final
 %%% papers, these will be inserted during the pagination process.
 
 \pagestyle{fancy}
@@ -127,7 +127,7 @@ This paper presents the framework, experimental methodology, and a research road
 
 %%% The next command prints the information defined in the preamble.
 
-\maketitle 
+\maketitle
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -178,7 +178,7 @@ Galton's ox-weighing experiment demonstrated that collective judgments (median o
 Surowiecki systematized this observation, arguing that under certain conditions (diversity of opinion, independence of members, decentralization, and effective aggregation) groups reliably outperform experts~\cite{surowiecki2004}.
 Formally, Scott Page's \emph{Diversity Prediction Theorem} provides mathematical grounding:
 \begin{equation}
-\text{Collective Error} = \overline{\text{Individual Error}} - \text{Diversity}
+  \text{Collective Error} = \overline{\text{Individual Error}} - \text{Diversity}
 \end{equation}
 where collective error is the mean squared error of the group prediction, \(\overline{\text{Individual Error}}\) is the average of individual squared errors, and Diversity captures how different agents' predictions are~\cite{page2007}.
 This result implies that a team of ordinary individuals can outperform a specialist, provided the group is large enough and exhibits sufficient diversity in cognitive approach.
@@ -201,17 +201,17 @@ In summary, collective intelligence requires:
 
 Chess provides an ideal laboratory for studying collective decision-making in complex, sequential tasks.
 Unlike static judgment tasks (trivia answering, estimation), chess involves:
-  \begin{itemize}
-    \item \textbf{High-dimensional state space}: Approximately \(10^{47}\) legal positions, making expert heuristics difficult and providing an extensive test dataset.
+\begin{itemize}
+  \item \textbf{High-dimensional state space}: Approximately \(10^{47}\) legal positions, making expert heuristics difficult and providing an extensive test dataset.
   \item \textbf{Strategic thinking}: Each player must evaluate not just the next move but plan for responses and counter-responses. This task allows deliberation to express emerging strategies.
   \item \textbf{Objective evaluation}: The outcome of a game is unambiguous, and thanks to modern engines, each move can be evaluated with precise numerical scoring. The performance level of a crowd can thus be estimated with high precision.
   \item \textbf{Cultural significance}: Chess remains a synecdoche for intelligence. Both humans and algorithms are expected to demonstrate competence at this task, providing abundant documentation and research literacy.
-  \end{itemize}
-  
-  To evaluate the level of a chess player the community mainly relies on a number called the Elo rating.
+\end{itemize}
+
+To evaluate the level of a chess player the community mainly relies on a number called the Elo rating.
 Given two players with Elo ratings \(\text{Elo}_A\) and \(\text{Elo}_B\), the expected score (probability of A winning) is:
 \begin{equation} \label{eqn:elo}
-E_A = \frac{1}{1 + 10^{(\text{Elo}_B - \text{Elo}_A) / 400}}
+  E_A = \frac{1}{1 + 10^{(\text{Elo}_B - \text{Elo}_A) / 400}}
 \end{equation}
 This is the standard Elo formula, calibrated for chess~\cite{elo1978}.
 While this metric captures relative strength between two players, its absolute interpretation depends heavily on methodology and context.
@@ -342,7 +342,7 @@ The outcome is encoded as a score \(s \in \{1, 0.5, 0\}\) representing win, draw
 Beyond win/loss statistics, we evaluate move quality through centipawn loss analysis, where each move's quality is assessed by comparing the position evaluation before and after the move using Stockfish at depth 10.
 For a player who made \(N\) moves in a game, the average centipawn loss is:
 \begin{equation}
-\text{ACPL} = \frac{1}{N} \sum_{i=1}^{N} |\text{eval}_{\text{before}_i} - \text{eval}_{\text{after}_i}|
+  \text{ACPL} = \frac{1}{N} \sum_{i=1}^{N} |\text{eval}_{\text{before}_i} - \text{eval}_{\text{after}_i}|
 \end{equation}
 where evaluations are reported from the moving player's perspective.
 This metric provides an independent assessment of play quality that complements outcome-based statistics, particularly useful for fast evaluation on specific positions.
@@ -354,14 +354,14 @@ ChessLab estimates Elo ratings using the standard logistic model.
 \paragraph{Single-Opponent Estimation.}
 When a player achieves mean score \(\bar{s}\) over \(n\) games against a single opponent with known rating \(R_{\text{opp}}\), we invert equation~\eqref{eqn:elo} to obtain:
 \begin{equation}
-\hat{R} = R_{\text{opp}} + 400 \log_{10}\left(\frac{\bar{s}}{1 - \bar{s}}\right)
+  \hat{R} = R_{\text{opp}} + 400 \log_{10}\left(\frac{\bar{s}}{1 - \bar{s}}\right)
 \end{equation}
 To avoid numerical issues at the boundaries, we clip observed scores to the range \([\epsilon, 1-\epsilon]\) where \(\epsilon = 10^{-9}\), and constrain the final estimate to \([250, 3000]\) Elo.
 
 \paragraph{Multiple-Opponent Estimation.}
 When evaluating against \(m\) opponents with known ratings \(R_1, \ldots, R_m\) and corresponding observed scores \(\bar{s}_1, \ldots, \bar{s}_m\) from \(n_1, \ldots, n_m\) games, we estimate the player's Elo by minimizing the weighted squared error between observed and expected scores:
 \begin{equation}
-\hat{R} = \arg\min_{R \in [250, 3000]} \sum_{i=1}^{m} w_i {\left(\bar{s}_i - E(R, R_i)\right)}^2
+  \hat{R} = \arg\min_{R \in [250, 3000]} \sum_{i=1}^{m} w_i {\left(\bar{s}_i - E(R, R_i)\right)}^2
 \end{equation}
 where the weights are normalized as \(w_i = n_i / \sum_{j=1}^{m} n_j\).
 This objective function is optimized using bounded scalar minimization with a tolerance of 0.1 Elo points.
@@ -376,33 +376,33 @@ Both use the same underlying statistical framework but differ in how mean scores
 A match consists of \(n\) games between two fixed players.
 Given individual game scores \(s_1, s_2, \ldots, s_n\), the mean score is:
 \begin{equation}
-\bar{s} = \frac{1}{n}\sum_{i=1}^{n} s_i
+  \bar{s} = \frac{1}{n}\sum_{i=1}^{n} s_i
 \end{equation}
 For an expected score \(p\) (derived from Elo ratings via equation~\eqref{eqn:elo}), the standard error is:
 \begin{equation}
-\text{SE}(p) = \sqrt{\frac{p(1-p)}{n}}
+  \text{SE}(p) = \sqrt{\frac{p(1-p)}{n}}
 \end{equation}
 
 \paragraph{Multi-Opponent Ensemble Analysis.}
 When evaluating against \(m\) opponents with Elo ratings \(R_1, R_2, \ldots, R_m\), where match \(i\) consists of \(n_i\) games with observed mean score \(\bar{s}_i\) and expected score \(p_i\), we compute weighted ensemble statistics.
 The ensemble observed mean score is:
 \begin{equation}
-\bar{s}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i \bar{s}_i}{N}, \quad \text{where } N = \sum_{i=1}^{m} n_i
+  \bar{s}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i \bar{s}_i}{N}, \quad \text{where } N = \sum_{i=1}^{m} n_i
 \end{equation}
 The ensemble expected mean is computed analogously:
 \begin{equation}
-\bar{p}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i p_i}{N}
+  \bar{p}_{\text{ensemble}} = \frac{\sum_{i=1}^{m} n_i p_i}{N}
 \end{equation}
 To account for heterogeneous expected scores across matches, the standard error of the pooled proportion is:
 \begin{equation}
-\text{SE}_{\text{ensemble}} = \frac{\sqrt{\sum_{i=1}^{m} n_i p_i (1 - p_i)}}{N}
+  \text{SE}_{\text{ensemble}} = \frac{\sqrt{\sum_{i=1}^{m} n_i p_i (1 - p_i)}}{N}
 \end{equation}
 This formulation correctly handles cases where different matches have different expected outcomes, which is essential when testing an engine against a ladder of opponents at varying strength levels.
 
 \paragraph{Hypothesis Testing.}
 For both single-match and ensemble analyses, the test statistic is:
 \begin{equation}
-z = \frac{|\bar{s} - p|}{\text{SE}(p)},
+  z = \frac{|\bar{s} - p|}{\text{SE}(p)},
 \end{equation}
 where \(\bar{s}\) and \(p\) represent either the single-match or ensemble values as appropriate.
 We automatically select between z-test and t-test based on sample size and expected frequency.
@@ -417,8 +417,8 @@ In this section we present preliminary experiments designed to validate ChessLab
 These results serve as sanity checks and motivate the more extensive roadmap outlined in Section~\ref{sec:roadmap}.
 To permit fast execution, we limit initial experiments to ensembles of up to 10 engines playing 20 games each against a small ladder of Stockfish opponents (Elo 1320, 1760, and 2200).
 
-The figures~\ref{fig:stockfish_calibration} and~\ref{fig:majority_voting} are auto generated by the statistical analysis module. 
-The `ID' axis represents the internal database identifier for each engine instance. 
+The figures~\ref{fig:stockfish_calibration} and~\ref{fig:majority_voting} are auto generated by the statistical analysis module.
+The `ID' axis represents the internal database identifier for each engine instance.
 Curves represent the expected mean score (abscissa) for a player of that Elo against an opponent of a given Elo (ordinate).
 Columns represent the measured scores obtained in practice across different strength levels. Green represent the victory ratio, Red the loss ratio and white the draw ratio.
 
@@ -501,15 +501,15 @@ Future publications will report on the larger set of experiments outlined here a
 The assistance of Large Language Models (LLMs) was used in a limited and controlled manner during the writing process of this paper.
 All scientific claims, experimental designs, theoretical contributions, and the final version of this paper remain the responsibility of the authors.
 
-%%% The following command should be issued somewhere in the first column 
+%%% The following command should be issued somewhere in the first column
 %%% of the final page of your paper.
 \balance
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% The acknowledgments section is defined using the "acks" environment
-%%% (rather than an unnumbered section). The use of this environment 
-%%% ensures the proper identification of the section in the article 
+%%% (rather than an unnumbered section). The use of this environment
+%%% ensures the proper identification of the section in the article
 %%% metadata as well as the consistent spelling of the heading.
 
 %\begin{acks}
@@ -518,10 +518,10 @@ All scientific claims, experimental designs, theoretical contributions, and the 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% The next two lines define, first, the bibliography style to be 
+%%% The next two lines define, first, the bibliography style to be
 %%% applied, and, second, the bibliography file to be used.
 
-\bibliographystyle{ACM-Reference-Format} 
+\bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
