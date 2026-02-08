@@ -44,6 +44,23 @@ def get_stockfish_url() -> str:
     )
 
 
+def get_madchess_url() -> str:
+    return os.getenv(
+        "MADCHESS_URL",
+        str(
+            SRC_DIR
+            / "third_party/MadChess/src/Engine/bin/Release/net9.0/linux-x64/publish/MadChess.Engine"
+        ),
+    )
+
+
+def get_arasan_url() -> str:
+    return os.getenv(
+        "ARASAN_URL",
+        str(SRC_DIR / "third_party/arasan/src/bin/arasanx-64-avx2-bmi2"),
+    )
+
+
 def get_maia_url() -> str:
     return os.getenv("MAIA_URL", str(SRC_DIR / "third_party/maia"))
 

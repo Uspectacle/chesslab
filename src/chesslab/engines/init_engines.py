@@ -212,6 +212,73 @@ def get_stockfish_player(
     return player
 
 
+def get_arasan_player(
+    session: Session,
+    elo: Optional[int | float] = None,
+    create_not_raise: bool = True,
+) -> Player:
+    if bool(elo):
+        options: Dict[str, Any] = {
+            "UCI_LimitStrength": True,
+            "UCI_Elo": int(elo),
+        }
+        logger.debug("Using Elo limit strength", elo=elo)
+    else:
+        options: Dict[str, Any] = {
+            "UCI_LimitStrength": False,
+        }
+
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="Arasan",
+        expected_elo=int(elo) if elo else 3450,
+        options=options,
+        create_not_raise=create_not_raise,
+    )
+
+    logger.info(
+        "Arasan player ready",
+        player_id=player.id,
+        expected_elo=player.expected_elo,
+    )
+
+    return player
+
+
+def get_madchess_player(
+    session: Session,
+    elo: Optional[int | float] = None,
+    create_not_raise: bool = True,
+) -> Player:
+    if bool(elo):
+        options: Dict[str, Any] = {
+            "UCI_LimitStrength": True,
+            "UCI_Elo": int(elo),
+        }
+        logger.debug("Using Elo limit strength", elo=elo)
+    else:
+        options: Dict[str, Any] = {
+            "UCI_LimitStrength": False,
+        }
+
+    player = get_player_by_attributes(
+        session=session,
+        engine_type="MadChess",
+        expected_elo=int(elo) if elo else 2800,
+        options=options,
+        create_not_raise=create_not_raise,
+    )
+
+    logger.info(
+        "MadChess player ready",
+        player_id=player.id,
+        expected_elo=player.expected_elo,
+    )
+
+    return player
+
+
+
 def get_stockfish_range(
     session: Session,
     min_elo: int = 1320,
@@ -224,11 +291,23 @@ def get_stockfish_range(
     ]
 
 
+def get_madchess_range(
+    session: Session,
+    min_elo: int = 600,
+    max_elo: int = 2600,
+    num_step: int = 3,
+) -> list[Player]:
+    return [
+        get_madchess_player(session=session, elo=elo)
+        for elo in np.linspace(min_elo, max_elo, num_step)
+    ]
+
+
 def get_stockfish_gaussian(
     session: Session,
     mean: float = 1700,
     std_dev: float = 200,
-    num_samples: int = 3,
+    num_samples: int = 10,
     min_elo: int = 1320,
     max_elo: int = 2200,
     seed: Optional[int] = None,
@@ -238,6 +317,50 @@ def get_stockfish_gaussian(
     sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
     sampled_elos = sampled_elos.astype(int)
     return [get_stockfish_player(session=session, elo=elo) for elo in sampled_elos]
+
+
+def get_madchess_gaussian(
+    session: Session,
+    mean: float = 1100,
+    std_dev: float = 400,
+    num_samples: int = 10,
+    min_elo: int = 600,
+    max_elo: int = 2600,
+    seed: Optional[int] = None,
+) -> list[Player]:
+    rng = np.random.default_rng(seed) if seed else np.random
+    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
+    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
+    sampled_elos = sampled_elos.astype(int)
+    return [get_madchess_player(session=session, elo=elo) for elo in sampled_elos]
+
+
+def get_maia_range(
+    session: Session,
+    min_elo: int = 1100,
+    max_elo: int = 1900,
+    num_step: int = 9,
+) -> list[Player]:
+    return [
+        get_maia_player(session=session, elo=elo)
+        for elo in np.linspace(min_elo, max_elo, num_step)
+    ]
+
+
+def get_maia_gaussian(
+    session: Session,
+    mean: float = 1700,
+    std_dev: float = 400,
+    num_samples: int = 10,
+    min_elo: int = 1100,
+    max_elo: int = 1900,
+    seed: Optional[int] = None,
+) -> list[Player]:
+    rng = np.random.default_rng(seed) if seed else np.random
+    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
+    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
+    sampled_elos = sampled_elos.astype(int)
+    return [get_maia_player(session=session, elo=elo) for elo in sampled_elos]
 
 
 if __name__ == "__main__":

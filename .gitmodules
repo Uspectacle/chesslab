@@ -1,3 +1,9 @@
 [submodule "src/third_party/stockfish"]
 	path = src/third_party/stockfish
 	url = https://github.com/official-stockfish/Stockfish.git
+[submodule "src/third_party/MadChess"]
+	path = src/third_party/MadChess
+	url = https://github.com/ekmadsen/MadChess.git
+[submodule "src/third_party/arasan"]
+	path = src/third_party/arasan
+	url = https://github.com/jdart1/arasan-chess.git

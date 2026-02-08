@@ -39,8 +39,8 @@ class Maia2Engine(BaseEngine):
 
     # Define UCI options
     options = [
-        OptionSpin(name="UCI_Elo", default=1500, min=1100, max=2500),
-        OptionSpin(name="OpponentElo", default=1500, min=1100, max=2500),
+        OptionSpin(name="UCI_Elo", default=1500, min=1100, max=1900),
+        OptionSpin(name="OpponentElo", default=1500, min=1100, max=1900),
         OptionCombo(name="ModelType", default="rapid", vars=["rapid", "blitz"]),
         OptionCombo(name="Device", default="cpu", vars=["cpu", "gpu"]),
     ]

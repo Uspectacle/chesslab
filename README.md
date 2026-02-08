@@ -55,11 +55,24 @@ pip install -e .
 
 ### 4. Build Engines
 
-Stockfish is included as a submodule and must be compiled for your specific architecture. (Maia is handled via Python dependencies).
+Stockfish, Arasan and MadChess are included as a submodule and must be compiled for your specific architecture. (Maia is handled via Python dependencies).
 
 ```bash
 cd src/third_party/stockfish/src/
 make -j profile-build
+cd -
+```
+
+```bash
+cd src/third_party/arasan/src
+git submodule update --init --recursive
+make CC=clang BUILD_TYPE=avx2-bmi2 profiled
+cd -
+```
+
+```bash
+cd src/third_party/MadChess/
+dotnet publish src/Engine/Engine.csproj -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true /p:UseAppHost=true
 cd -
 ```
 
