@@ -8,6 +8,7 @@ import logging
 from typing import Literal, Optional
 
 import chess
+import numpy as np
 import structlog
 from maia2 import inference, model
 from maia2.main import MAIA2Model
@@ -155,7 +156,15 @@ class Maia2Engine(BaseEngine):
             elo_oppo=elo_oppo,
         )
 
-        best_move_str = max(move_probs, key=lambda move: move_probs[move])
+        moves = [
+            move
+            for move in move_probs.keys()
+            if self._board.is_legal(chess.Move.from_uci(move))
+        ]
+        probabilities = np.array([move_probs[move] for move in moves])
+        probabilities = probabilities / probabilities.sum()
+
+        best_move_str = np.random.choice(moves, p=probabilities)
         move = chess.Move.from_uci(best_move_str)
 
         logger.debug(

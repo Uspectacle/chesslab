@@ -142,7 +142,17 @@ async def play_move(
 
     board = chess.Board(move.fen_before)
 
-    move.uci_move = await get_uci_move(board=board, player=player, protocol=protocol)
+    uci_move = await get_uci_move(board=board, player=player, protocol=protocol)
+
+    if move.uci_move:
+        logger.warning("Move already played", move_id=move.id, uci_move=move.uci_move)
+        return move
+
+    if not board.is_legal(chess.Move.from_uci(uci_move)):
+        logger.error("Move illegal", move_id=move.id, uci_move=uci_move)
+        return move
+
+    move.uci_move = uci_move
     move.played_at = datetime.now()
     session.commit()
 

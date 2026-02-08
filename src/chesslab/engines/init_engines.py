@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional
 import chess.engine
 import numpy as np
 import structlog
-import torch
 from sqlalchemy.orm import Session
 
+from chesslab.env import get_device
 from chesslab.storage import Player, get_session
 from chesslab.storage.player_tools import get_player_by_attributes
 
@@ -51,7 +51,7 @@ def get_maia_player(
             "UCI_Elo": int(elo),
             "OpponentElo": int(opponent_elo) if opponent_elo is not None else int(elo),
             "ModelType": "blitz" if for_blitz else "rapid",
-            "Device": "gpu" if use_gpu and torch.cuda.is_available() else "cpu",
+            "Device": "gpu" if use_gpu and get_device() == "cuda" else "cpu",
         },
         create_not_raise=create_not_raise,
     )

@@ -16,6 +16,8 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
+from chesslab.env import get_device
+
 logger = structlog.get_logger()
 
 
@@ -35,7 +37,7 @@ def load_model(
     logger.info("Loading LLM", model=model_name, quantization=quantization)
 
     # Determine device
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_device()
     if device == "cuda":
         logger.info("Using GPU", device=torch.cuda.get_device_name(0))
     else:
@@ -146,7 +148,7 @@ def generate_response(
         )
 
     # Decode
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)  # pyright: ignore[reportUnknownMemberType]
+    response: str = tokenizer.decode(outputs[0], skip_special_tokens=True)  # pyright: ignore[reportAssignmentType, reportUnknownMemberType]
 
     # Remove input from response if present
     if input_text in response:

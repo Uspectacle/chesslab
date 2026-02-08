@@ -32,8 +32,9 @@ async def run_multiple_games(
 ):
     """Run games asynchronously with controlled concurrency."""
     logger.debug("Starting async game runner", total_games=len(games))
-
-    games_to_complete = [game for game in games if not game.result]
+    games_to_complete = list(
+        {game.id: game for game in games if not game.result}.values()
+    )
     logger.info("Games to complete", count=len(games_to_complete))
     random.shuffle(games_to_complete)
 
@@ -129,7 +130,7 @@ def run_range(
     remove_existing: bool = True,
     get_existing: bool = True,
     alternate_color: bool = True,
-    max_concurrent: int = 8,
+    max_concurrent: int = 10,
 ) -> List[Game]:
     games: List[Game] = []
 

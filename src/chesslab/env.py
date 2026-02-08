@@ -7,8 +7,10 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Literal
 
 import structlog
+import torch
 from dotenv import load_dotenv
 
 CHESSLAB_DIR = Path(__file__).parent
@@ -65,6 +67,16 @@ def get_maia_url() -> str:
     return os.getenv("MAIA_URL", str(SRC_DIR / "third_party/maia"))
 
 
+def get_device() -> Literal["cpu", "cuda"]:
+    # Detect GPU
+    if torch.cuda.is_available():
+        return "cuda"
+    elif hasattr(torch, "hip") and torch.hip.is_available():  # pyright: ignore[reportAttributeAccessIssue]
+        return "cuda"
+    else:
+        return "cpu"
+
+
 if __name__ == "__main__":
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -72,4 +84,7 @@ if __name__ == "__main__":
 
     print(f"get_database_url: {get_database_url()}")
     print(f"get_stockfish_url: {get_stockfish_url()}")
+    print(f"get_madchess_url: {get_madchess_url()}")
+    print(f"get_arasan_url: {get_arasan_url()}")
     print(f"get_maia_url: {get_maia_url()}")
+    print(f"get_device: {get_device()}")

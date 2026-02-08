@@ -12,7 +12,7 @@ from chesslab.storage import get_session
 
 logger = structlog.get_logger()
 
-num_games = 10
+num_games = 3
 
 if __name__ == "__main__":
     logger.info("Starting verify maia script")
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         run_range(
             session=session,
             players=players,
-            opponents=players,
+            opponents=opponents,
             num_games=num_games,
             remove_existing=False,
             get_existing=True,
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                     session=session,
                     evaluator=evaluator,
                     player=player,
-                    opponents=players,
+                    opponents=opponents,
                     num_games=num_games,
                 )
                 for player in players
