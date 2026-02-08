@@ -241,7 +241,7 @@ class RangeAnalysis:
 
         return "".join(report_lines)
 
-    def plot_score_on_ax(self, ax: Axes) -> None:
+    def plot_score_on_ax(self, ax: Axes, ignore_declaration: bool = False) -> None:
         """Plot statistics for the player."""
         # ----- WIN/LOSS RATIO BARS -----
         width = 30
@@ -285,23 +285,24 @@ class RangeAnalysis:
         expected_x = np.linspace(min(self.opponent_elos), max(self.opponent_elos), 100)
 
         # Plot expected curve based on declared Elo
-        expected_y = np.array(
-            [
-                expected_score(self.player.expected_elo, opponent_elo)
-                for opponent_elo in expected_x
-            ]
-        )
-        ax.plot(  # pyright: ignore[reportUnknownMemberType]
-            expected_x,
-            expected_y,
-            "-",
-            color="#ff0084",
-            zorder=3,
-            label=(
-                f"Expected (Elo={int(self.player.expected_elo)}, "
-                f"p={self.ensemble_p_value_of_expectation:.3f})"
-            ),
-        )
+        if not ignore_declaration:
+            expected_y = np.array(
+                [
+                    expected_score(self.player.expected_elo, opponent_elo)
+                    for opponent_elo in expected_x
+                ]
+            )
+            ax.plot(  # pyright: ignore[reportUnknownMemberType]
+                expected_x,
+                expected_y,
+                "-",
+                color="#ff0084",
+                zorder=3,
+                label=(
+                    f"Expected (Elo={int(self.player.expected_elo)}, "
+                    f"p={self.ensemble_p_value_of_expectation:.3f})"
+                ),
+            )
 
         # Plot estimated curve based on fitted Elo
         estimated_y = np.array(

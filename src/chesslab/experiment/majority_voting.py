@@ -9,8 +9,8 @@ from chesslab.analysis.evaluator import Evaluator
 from chesslab.analysis.stat_tools import estimate_gaussian_std
 from chesslab.arena.run_match import run_range
 from chesslab.engines.init_engines import (
-    get_stockfish_gaussian,
-    get_stockfish_range,
+    get_maia_gaussian,
+    get_maia_range,
     get_voting_player,
 )
 from chesslab.storage import get_session
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     num_samples = 10
 
     with get_session() as session:
-        crowd = get_stockfish_gaussian(
+        crowd = get_maia_gaussian(
             session=session,
             mean=mean,
             std_dev=std_dev,
@@ -49,6 +49,7 @@ if __name__ == "__main__":
         true_std = int(estimate_gaussian_std(expected_elos))
         report = f"[seed={seed}] Stockfish Gaussian {true_mean} (+/- {true_std}) Elo x {num_samples}\n\n"
         report += ", ".join([str(expected_elo) for expected_elo in expected_elos])
+
         with open(crowd_path, "w", encoding="utf-8") as f:
             f.write(report)
 
@@ -57,14 +58,28 @@ if __name__ == "__main__":
         players = [
             get_voting_player(session=session, players=crowd, aggregator="randomized"),
             get_voting_player(
-                session=session, players=crowd, aggregator="top_elo_dictator"
+                session=session,
+                players=crowd,
+                aggregator="randomized",
+                weights=[player.expected_elo for player in crowd],
             ),
-            get_voting_player(session=session, players=crowd, aggregator="elo_weight"),
             get_voting_player(session=session, players=crowd, aggregator="majority"),
+            get_voting_player(
+                session=session,
+                players=crowd,
+                aggregator="majority",
+                weights=[player.expected_elo for player in crowd],
+            ),
+            get_voting_player(session=session, players=crowd, aggregator="rotating"),
         ]
-        opponents = get_stockfish_range(
-            session=session, min_elo=1320, max_elo=2200, num_step=3
-        )
+        names = [
+            "Most bollot",
+            "Elo-wheigted most ballot",
+            "Random ballot",
+            "Elo-wheigted random ballot",
+            "Rotating dictator",
+        ]
+        opponents = get_maia_range(session=session)
 
         run_range(
             session=session,
@@ -106,11 +121,9 @@ if __name__ == "__main__":
 
             ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]
 
-            for ax, range_analysis in zip(ax_list, ranges_analysis):
-                range_analysis.plot_score_on_ax(ax)
-                ax.set_title(
-                    f"{range_analysis.player.options.get('Aggregator')} (ID: {range_analysis.player.id})"
-                )
+            for ax, range_analysis, name in zip(ax_list, ranges_analysis, names):
+                range_analysis.plot_score_on_ax(ax, ignore_declaration=True)
+                ax.set_title(name)
 
             ax_list[-1].set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()

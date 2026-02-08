@@ -1,102 +1,57 @@
 import random
-from collections import Counter
+from collections import defaultdict
 from typing import Callable, Dict, List
 
 import chess
 
-from chesslab.storage import Player
 
-
-def majority(votes: List[str], players: List[Player], board: chess.Board) -> str:
-    vote_counts = Counter(votes)
-
-    max_votes = max(vote_counts.values())
-    winners = [move for move, count in vote_counts.items() if count == max_votes]
-
+def majority(votes: List[str], weights: List[float], board: chess.Board) -> str:
+    """Selects the move with the highest total weighted sum of votes."""
+    score_map = defaultdict(float)
+    for move, weight in zip(votes, weights):
+        score_map[move] += weight
+    max_score = max(score_map.values())
+    winners = [move for move, score in score_map.items() if score == max_score]
     return random.choice(winners)
 
 
-def minority(votes: List[str], players: List[Player], board: chess.Board) -> str:
-    vote_counts = Counter(votes)
+def minority(votes: List[str], weights: List[float], board: chess.Board) -> str:
+    """Picks a legal move that NO ONE suggested or selects the move with the lowest total weighted sum of votes."""
+    legal_moves = [m.uci() for m in board.legal_moves]
+    unpopular_moves = [m for m in legal_moves if m not in votes]
 
-    max_votes = min(vote_counts.values())
-    winners = [move for move, count in vote_counts.items() if count == max_votes]
+    if unpopular_moves:
+        return random.choice(unpopular_moves)
 
+    score_map = defaultdict(float)
+    for move, weight in zip(votes, weights):
+        score_map[move] += weight
+    min_score = min(score_map.values())
+    winners = [move for move, score in score_map.items() if score == min_score]
     return random.choice(winners)
 
 
-def randomized(votes: List[str], players: List[Player], board: chess.Board) -> str:
-    return random.choice(votes)
+def randomized(votes: List[str], weights: List[float], board: chess.Board) -> str:
+    """Probability-based selection: higher weight moves have a better chance."""
+    return random.choices(votes, weights=weights)[0]
 
 
-def top_elo_dictator(
-    votes: List[str], players: List[Player], board: chess.Board
-) -> str:
-    vote, _dictator = max(
-        zip(votes, players), key=lambda vote_player: vote_player[1].expected_elo
-    )
+def rotating(votes: List[str], weights: List[float], board: chess.Board) -> str:
+    """Cycles through players move-by-move, weighted by their influence."""
+    scaled_indices = []
+    for idx, weight in enumerate(weights):
+        scaled_indices.extend([idx] * round(weight))
 
-    return vote
+    current_index = scaled_indices[board.ply() % len(scaled_indices)]
 
-
-def bottom_elo_dictator(
-    votes: List[str], players: List[Player], board: chess.Board
-) -> str:
-    vote, _dictator = min(
-        zip(votes, players), key=lambda vote_player: vote_player[1].expected_elo
-    )
-
-    return vote
+    return votes[current_index]
 
 
-def median_elo_dictator(
-    votes: List[str], players: List[Player], board: chess.Board
-) -> str:
-    vote, _dictator = sorted(
-        zip(votes, players), key=lambda vote_player: vote_player[1].expected_elo
-    )[len(players) // 2]
-
-    return vote
-
-
-def rotating_dictator(
-    votes: List[str], players: List[Player], board: chess.Board
-) -> str:
-    return votes[board.ply() % len(votes)]
-
-
-def elo_weight(votes: List[str], players: List[Player], board: chess.Board) -> str:
-    weight_counter: Counter[str] = Counter()
-
-    for vote, player in zip(votes, players):
-        weight_counter[vote] += player.expected_elo
-
-    moves, weights = zip(*weight_counter.items())
-    probs = [weight / sum(weights) for weight in weights]
-
-    return random.choices(moves, weights=probs, k=1)[0]
-
-
-def contrarian(votes: List[str], players: List[Player], board: chess.Board) -> str:
-    moves = [move.uci() for move in board.legal_moves]
-    no_votes = [move for move in moves if move not in votes]
-
-    if len(no_votes):
-        return random.choice(no_votes)
-
-    return minority(votes=votes, players=players, board=board)
-
-
-Aggregator = Callable[[List[str], List[Player], chess.Board], str]
+Aggregator = Callable[[List[str], List[float], chess.Board], str]
 
 AGGREGATORS: Dict[str, Aggregator] = {
     "majority": majority,
     "minority": minority,
     "randomized": randomized,
-    "top_elo_dictator": top_elo_dictator,
-    "bottom_elo_dictator": bottom_elo_dictator,
-    "median_elo_dictator": median_elo_dictator,
-    "rotating_dictator": rotating_dictator,
-    "elo_weight": elo_weight,
-    "contrarian": contrarian,
+    "rotating": rotating,
 }

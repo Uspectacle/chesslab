@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 import structlog
 from matplotlib import pyplot as plt
 
 from chesslab.analysis.analyze_range import RangeAnalysis
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.arena.run_match import run_range
-from chesslab.engines.init_engines import get_maia_range, get_stockfish_range
+from chesslab.engines.init_engines import get_distilled_stockfish, get_maia_range
 from chesslab.storage import get_session
 
 logger = structlog.get_logger()
@@ -15,8 +16,8 @@ logger = structlog.get_logger()
 num_games = 10
 
 if __name__ == "__main__":
-    logger.info("Starting verify stockfish script")
-    folder = Path(__file__).parent / "results/verify_stockfish"
+    logger.info("Starting distillate stockfish script")
+    folder = Path(__file__).parent / "results/distillate_stockfish"
     folder.mkdir(parents=True, exist_ok=True)
 
     structlog.configure(
@@ -24,9 +25,10 @@ if __name__ == "__main__":
     )
 
     with get_session() as session:
-        players = get_stockfish_range(
-            session=session, min_elo=1320, max_elo=2200, num_step=5
-        )
+        ratios = np.linspace(10, 90, 5)
+        players = [
+            get_distilled_stockfish(session=session, ratio=ratio) for ratio in ratios
+        ]
 
         opponents = get_maia_range(session=session)
 
@@ -70,9 +72,9 @@ if __name__ == "__main__":
 
             ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]
 
-            for ax, range_analysis in zip(ax_list, ranges_analysis):
+            for ax, range_analysis, ratio in zip(ax_list, ranges_analysis, ratios):
                 range_analysis.plot_score_on_ax(ax)
-                ax.set_title(f"Stockfish {range_analysis.player.expected_elo} ELO")
+                ax.set_title(f"Stockfish {int(ratio * 100)}% distillated")
 
             ax_list[-1].set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()

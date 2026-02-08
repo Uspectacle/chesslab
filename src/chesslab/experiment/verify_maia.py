@@ -1,18 +1,18 @@
 import logging
 from pathlib import Path
 
-import numpy as np
 import structlog
 from matplotlib import pyplot as plt
 
 from chesslab.analysis.analyze_range import RangeAnalysis
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.arena.run_match import run_range
-from chesslab.engines.init_engines import get_maia_player, get_stockfish_range
+from chesslab.engines.init_engines import get_maia_range
 from chesslab.storage import get_session
 
 logger = structlog.get_logger()
 
+num_games = 10
 
 if __name__ == "__main__":
     logger.info("Starting verify maia script")
@@ -24,20 +24,15 @@ if __name__ == "__main__":
     )
 
     with get_session() as session:
-        players = [
-            get_maia_player(session=session, elo=elo)
-            for elo in np.linspace(1100, 1900, 3)
-        ]
+        players = get_maia_range(session=session, num_step=5)
 
-        opponents = get_stockfish_range(
-            session=session, min_elo=1320, max_elo=2200, num_step=3
-        )
+        opponents = get_maia_range(session=session)
 
         run_range(
             session=session,
             players=players,
-            opponents=opponents,
-            num_games=10,
+            opponents=players,
+            num_games=num_games,
             remove_existing=False,
             get_existing=True,
             alternate_color=True,
@@ -50,8 +45,8 @@ if __name__ == "__main__":
                     session=session,
                     evaluator=evaluator,
                     player=player,
-                    opponents=opponents,
-                    num_games=10,
+                    opponents=players,
+                    num_games=num_games,
                 )
                 for player in players
             ]
@@ -75,6 +70,7 @@ if __name__ == "__main__":
 
             for ax, range_analysis in zip(ax_list, ranges_analysis):
                 range_analysis.plot_score_on_ax(ax)
+                ax.set_title(f"Maia {range_analysis.player.expected_elo} ELO")
 
             ax_list[-1].set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()

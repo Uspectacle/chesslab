@@ -124,8 +124,10 @@ def get_voting_player(
     session: Session,
     players: List[Player],
     aggregator: str = "majority",
+    weights: Optional[List[float]] = None,
     max_concurrent: int = 1,
     create_not_raise: bool = True,
+    expected_elo: Optional[int] = None,
 ) -> Player:
     player_ids = ",".join([str(player.id) for player in players])
 
@@ -135,24 +137,19 @@ def get_voting_player(
         max_concurrent=max_concurrent,
     )
 
-    expected_elos = [player.expected_elo for player in players]
-    mean_elo = sum(expected_elos) / len(expected_elos)
-
-    if aggregator == "top_elo_dictator":
-        expected_elo = max(expected_elos)
-    elif aggregator == "bottom_elo_dictator":
-        expected_elo = min(expected_elos)
-    else:
-        expected_elo = mean_elo
+    if expected_elo is None:
+        expected_elos = [player.expected_elo for player in players]
+        expected_elo = int(sum(expected_elos) / len(expected_elos))
 
     player = get_player_by_attributes(
         session=session,
         engine_type="VotingEngine",
-        expected_elo=int(expected_elo),
+        expected_elo=expected_elo,
         options={
             "Player_ids": player_ids,
             "Max_concurrent": max_concurrent,
             "Aggregator": aggregator,
+            "Weights": weights,
         },
         create_not_raise=create_not_raise,
     )
@@ -277,6 +274,31 @@ def get_madchess_player(
 
     return player
 
+
+def get_distilled_stockfish(session: Session, ratio: float, depth: int = 10) -> Player:
+    return get_voting_player(
+        session=session,
+        players=[
+            get_random_player(session=session),
+            get_stockfish_player(session=session, depth=depth),
+        ],
+        aggregator="randomized",
+        weights=[1 - ratio, ratio],
+        expected_elo=int(ratio * (stockfish_elo(depth) - 300) + 300),
+    )
+
+
+def get_distilled_maia(session: Session, ratio: float, elo: int = 1100) -> Player:
+    return get_voting_player(
+        session=session,
+        players=[
+            get_random_player(session=session),
+            get_maia_player(session=session, elo=elo),
+        ],
+        aggregator="randomized",
+        weights=[1 - ratio, ratio],
+        expected_elo=int(ratio * (elo - 300) + 300),
+    )
 
 
 def get_stockfish_range(

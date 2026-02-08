@@ -48,6 +48,7 @@ class VotingEngine(BaseEngine):
     author = "ChessLab"
     options = [
         OptionString(name="Player_ids"),
+        OptionString(name="Weights"),
         OptionCombo(
             name="Aggregator", default="majority", vars=list(AGGREGATORS.keys())
         ),
@@ -82,6 +83,38 @@ class VotingEngine(BaseEngine):
             raise RuntimeError("Option Max_concurrent not found")
 
         return option.value
+
+    @property
+    def weights(self) -> List[float]:
+        """Get the weights for each player.
+
+        If no weights are given, they are set to 1 for each player.
+
+        Returns:
+            List of weights (one per player)
+
+        Raises:
+            ValueError: If weights list length doesn't match player_ids length or if weights are invalid
+        """
+        option = self.get_option("Weights")
+
+        if option is None or not str(option.value).strip():
+            return [1.0 for _ in self.player_ids]
+
+        weights_str = str(option.value).strip()
+
+        try:
+            weights = [float(w.strip()) for w in weights_str.split(",")]
+        except ValueError as e:
+            raise ValueError(f"Weights must be comma-separated numbers: {e}")
+
+        if len(weights) != len(self.player_ids):
+            raise ValueError(
+                f"Number of weights ({len(weights)}) must match "
+                f"number of player_ids ({len(self.player_ids)})"
+            )
+
+        return weights
 
     @property
     def player_ids(self) -> List[int]:
@@ -190,7 +223,7 @@ class VotingEngine(BaseEngine):
             )
         )
 
-        return self.aggregator(votes, players, board)
+        return self.aggregator(votes, self.weights, board)
 
 
 if __name__ == "__main__":
