@@ -65,7 +65,7 @@ if __name__ == "__main__":
             num_subplot = len(players)
 
             _fig, axes = plt.subplots(  # pyright: ignore[reportUnknownMemberType]
-                num_subplot, 1, figsize=(10, 4 * num_subplot), sharex=True
+                num_subplot, 1, figsize=(7, 3 * num_subplot), sharex=True
             )
 
             ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]

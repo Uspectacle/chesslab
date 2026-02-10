@@ -245,6 +245,7 @@ def get_arasan_player(
 def get_madchess_player(
     session: Session,
     elo: Optional[int | float] = None,
+    time: float = 0.3,
     create_not_raise: bool = True,
 ) -> Player:
     if bool(elo):
@@ -263,6 +264,7 @@ def get_madchess_player(
         engine_type="MadChess",
         expected_elo=int(elo) if elo else 2800,
         options=options,
+        limit=chess.engine.Limit(time=time),
         create_not_raise=create_not_raise,
     )
 
@@ -305,7 +307,7 @@ def get_stockfish_range(
     session: Session,
     min_elo: int = 1320,
     max_elo: int = 2200,
-    num_step: int = 3,
+    num_step: int = 10,
 ) -> list[Player]:
     return [
         get_stockfish_player(session=session, elo=elo)
@@ -317,7 +319,7 @@ def get_madchess_range(
     session: Session,
     min_elo: int = 600,
     max_elo: int = 2600,
-    num_step: int = 3,
+    num_step: int = 11,
 ) -> list[Player]:
     return [
         get_madchess_player(session=session, elo=elo)

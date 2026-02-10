@@ -7,16 +7,16 @@ from matplotlib import pyplot as plt
 from chesslab.analysis.analyze_range import RangeAnalysis
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.arena.run_match import run_range
-from chesslab.engines.init_engines import get_maia_range, get_stockfish_range
+from chesslab.engines.init_engines import get_stockfish_range
 from chesslab.storage import get_session
 
 logger = structlog.get_logger()
 
-num_games = 10
+num_games = 100
 
 if __name__ == "__main__":
-    logger.info("Starting verify stockfish script")
-    folder = Path(__file__).parent / "results/verify_stockfish"
+    logger.info("Starting coherence stockfish script")
+    folder = Path(__file__).parent / "results/coherence_stockfish"
     folder.mkdir(parents=True, exist_ok=True)
 
     structlog.configure(
@@ -24,11 +24,9 @@ if __name__ == "__main__":
     )
 
     with get_session() as session:
-        players = get_stockfish_range(
-            session=session, min_elo=1320, max_elo=2200, num_step=5
-        )
+        players = get_stockfish_range(session=session, num_step=5)
 
-        opponents = get_maia_range(session=session)
+        opponents = get_stockfish_range(session=session)
 
         run_range(
             session=session,
@@ -53,19 +51,18 @@ if __name__ == "__main__":
                 for player in players
             ]
 
-            for range_analysis in ranges_analysis:
-                range_analysis.report
-                report_path = folder / f"player_{range_analysis.player.id}.txt"
+            # for range_analysis in ranges_analysis:
+            #     report_path = folder / f"player_{range_analysis.player.id}.txt"
 
-                with open(report_path, "w", encoding="utf-8") as f:
-                    f.write(range_analysis.report)
+            #     with open(report_path, "w", encoding="utf-8") as f:
+            #         f.write(range_analysis.report)
 
-                logger.info(f"Repport created at {report_path}")
+            #     logger.info(f"Report created at {report_path}")
 
             num_subplot = len(players)
 
             _fig, axes = plt.subplots(  # pyright: ignore[reportUnknownMemberType]
-                num_subplot, 1, figsize=(10, 4 * num_subplot), sharex=True
+                num_subplot, 1, figsize=(7, 3 * num_subplot), sharex=True
             )
 
             ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]
@@ -73,8 +70,9 @@ if __name__ == "__main__":
             for ax, range_analysis in zip(ax_list, ranges_analysis):
                 range_analysis.plot_score_on_ax(ax)
                 ax.set_title(f"Stockfish {range_analysis.player.expected_elo} ELO")
+                logger.info(f"Stockfish {range_analysis.player.expected_elo} plotted")
 
-            ax_list[-1].set_xlabel("Opponent Elo")  # pyright: ignore[reportUnknownMemberType]
+            ax_list[-1].set_xlabel("Opponent Stockfish Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()
 
             plot_path = folder / "plot.png"

@@ -340,7 +340,7 @@ if __name__ == "__main__":
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
-    logger.info("Starting Matc Analysis script")
+    logger.info("Starting Match Analysis script")
 
     with get_session() as session:
         with Evaluator() as evaluator:

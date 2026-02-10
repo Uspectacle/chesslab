@@ -76,8 +76,9 @@ class Maia2Engine(BaseEngine):
     @property
     def device(self) -> Literal["cpu", "gpu"]:
         """Get the inference device."""
-        opt = self.get_option("Device")
-        return opt.value.lower() if opt else "cpu"
+        return "cpu"
+        # opt = self.get_option("Device")
+        # return opt.value.lower() if opt else "cpu"
 
     def start(self) -> None:
         """Start the engine and load the Maia2 model.

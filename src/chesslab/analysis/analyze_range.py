@@ -333,7 +333,7 @@ class RangeAnalysis:
 
     def plot_scores(self, path_folder: Path | str) -> None:
         """Plot statistics for one player."""
-        _fig, axes = plt.subplots(1, 1, figsize=(10, 4), sharex=True)  # pyright: ignore[reportUnknownMemberType]
+        _fig, axes = plt.subplots(1, 1, figsize=(7, 3), sharex=True)  # pyright: ignore[reportUnknownMemberType]
 
         self.plot_score_on_ax(axes)
 
