@@ -19,6 +19,7 @@ from chesslab.analysis.analyze_match import MatchAnalysis
 from chesslab.analysis.elo_tools import ensemble_elo_from_scores, expected_score
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.analysis.stat_tools import (
+    coefficient_of_determination,
     compute_ensemble_p_value,
     ensemble_mean_score,
     ensemble_standard_error,
@@ -172,7 +173,7 @@ class RangeAnalysis:
         )
 
     @property
-    def number_of_move(self) -> float:
+    def number_of_move(self) -> int:
         """Number of time the player made a move."""
         return np.sum(
             [
@@ -197,13 +198,96 @@ class RangeAnalysis:
         return self.centipawn_loss / self.number_of_move
 
     @property
+    def r_squared_expected(self) -> float:
+        """R² showing how well expected Elo ratings predict match outcomes.
+
+        This expands all matches to individual game level and calculates R²
+        across all games in the ensemble.
+
+        Returns:
+            R² value (0 to 1) measuring goodness of fit for expected Elo model.
+        """
+        all_observed = []
+        all_predicted = []
+
+        # Expand each match to individual game level
+        for match, score in zip(self.matches_analysis, self.expected_scores):
+            # Each game in the match has the same expected score
+            all_observed.extend(match.player_1_scores)
+            all_predicted.extend([score] * len(match.player_1_scores))
+
+        return coefficient_of_determination(all_observed, all_predicted)
+
+    @property
+    def r_squared_estimated(self) -> float:
+        """R² showing how well estimated Elo rating predicts match outcomes.
+
+        This expands all matches to individual game level and calculates R²
+        across all games in the ensemble using the fitted Elo estimate.
+
+        Returns:
+            R² value (0 to 1) measuring goodness of fit for estimated Elo model.
+        """
+        all_observed = []
+        all_predicted = []
+
+        # Expand each match to individual game level
+        for match, estimated_score in zip(self.matches_analysis, self.estimated_scores):
+            # Each game in the match has the same estimated score
+            all_observed.extend(match.player_1_scores)
+            all_predicted.extend([estimated_score] * len(match.player_1_scores))
+
+        return coefficient_of_determination(all_observed, all_predicted)
+
+    @property
+    def r_squared_per_match_expected(self) -> list[float]:
+        """R² for each individual match using expected scores.
+
+        Returns:
+            List of R² values, one per match.
+        """
+        return [match.r_squared_expected for match in self.matches_analysis]
+
+    @property
+    def r_squared_per_match_estimated(self) -> list[float]:
+        """R² for each individual match using estimated scores.
+
+        Returns:
+            List of R² values, one per match.
+        """
+        return [match.r_squared_estimated for match in self.matches_analysis]
+
+    @property
+    def match_level_r_squared_expected(self) -> float:
+        """R² treating each match mean as a data point.
+
+        This is different from r_squared_expected:
+        - r_squared_expected: All individual games
+        - match_level_r_squared_expected: Match averages only
+
+        Useful for seeing if Elo predicts match-level performance.
+        """
+        return coefficient_of_determination(
+            observed=self.observed_scores, predicted=self.expected_scores
+        )
+
+    @property
+    def match_level_r_squared_estimated(self) -> float:
+        """R² treating each match mean as a data point (using estimated Elo)."""
+        return coefficient_of_determination(
+            observed=self.observed_scores, predicted=self.estimated_scores
+        )
+
+    @property
     def report(self) -> str:
-        """Textual report of all matches and ensemble statistics."""
+        """Enhanced report including R² statistics."""
         report_lines: List[str] = []
 
         # Individual match reports
-        for match_analysis in self.matches_analysis:
+        for i, match_analysis in enumerate(self.matches_analysis):
             report_lines.append(match_analysis.report)
+            # Could add per-match R² here if desired:
+            # report_lines.append(f"  Match R² (expected): {self.r_squared_per_match_expected[i]:.4f}\n")
 
         # Ensemble statistics
         report_lines.append(f"{'=' * 50}\n")
@@ -214,30 +298,70 @@ class RangeAnalysis:
         report_lines.append(f"Total matches: {len(self.matches_analysis)}\n")
         report_lines.append(f"Total games: {sum(self.num_rounds_per_match)}\n")
         report_lines.append("\n")
-        report_lines.append(f"Observed mean score: {self.ensemble_observed_mean:.3f}\n")
-        report_lines.append(f"Average centipawn loss: {self.average_centipawn_loss}\n")
-        report_lines.append(f"Expected mean score: {self.ensemble_expected_mean:.3f}\n")
+
+        # Observed performance
+        report_lines.append("OBSERVED PERFORMANCE:\n")
+        report_lines.append(f"  Mean score: {self.ensemble_observed_mean:.3f}\n")
         report_lines.append(
-            f"Expected standard error: {self.ensemble_expected_standard_error:.5f}\n"
-        )
-        report_lines.append(
-            f"P-value of expectation: {self.ensemble_p_value_of_expectation:.5f}\n"
+            f"  Average centipawn loss: {self.average_centipawn_loss:.2f}\n"
         )
         report_lines.append("\n")
-        report_lines.append(f"Estimated player Elo: {int(self.estimated_player_elo)}\n")
-        report_lines.append(f"Declared player Elo: {int(self.player.expected_elo)}\n")
+
+        # Expected Elo analysis
         report_lines.append(
-            f"Elo difference: {int(self.estimated_player_elo - self.player.expected_elo):+d}\n"
+            f"EXPECTED ELO ANALYSIS (Declared Elo: {int(self.player.expected_elo)}):\n"
         )
         report_lines.append(
-            f"Estimated mean score: {self.ensemble_estimated_mean:.3f}\n"
+            f"  Expected mean score: {self.ensemble_expected_mean:.3f}\n"
         )
         report_lines.append(
-            f"Estimated standard error: {self.ensemble_estimated_standard_error:.5f}\n"
+            f"  Expected SE: {self.ensemble_expected_standard_error:.5f}\n"
+        )
+        report_lines.append(f"  P-value: {self.ensemble_p_value_of_expectation:.5f}\n")
+        report_lines.append(f"  R² (game-level): {self.r_squared_expected:.4f}\n")
+        report_lines.append(
+            f"  R² (match-level): {self.match_level_r_squared_expected:.4f}\n"
+        )
+
+        # Interpretation
+        if self.ensemble_p_value_of_expectation < 0.05:
+            report_lines.append(
+                "  ⚠️  Significant difference from declared Elo (p < 0.05)\n"
+            )
+        else:
+            report_lines.append("  ✓ Consistent with declared Elo (p ≥ 0.05)\n")
+
+        if self.r_squared_expected > 0.8:
+            report_lines.append("  ✓ Excellent model fit (R² > 0.8)\n")
+        elif self.r_squared_expected > 0.5:
+            report_lines.append("  ✓ Good model fit (R² > 0.5)\n")
+        else:
+            report_lines.append("  ⚠️  Moderate/poor model fit (R² ≤ 0.5)\n")
+        report_lines.append("\n")
+
+        # Estimated Elo analysis
+        report_lines.append(
+            f"ESTIMATED ELO ANALYSIS (Fitted Elo: {int(self.estimated_player_elo)}):\n"
         )
         report_lines.append(
-            f"P-value of estimation: {self.ensemble_p_value_of_estimation:.5f}\n"
+            f"  Elo difference: {int(self.estimated_player_elo - self.player.expected_elo):+d}\n"
         )
+        report_lines.append(
+            f"  Estimated mean score: {self.ensemble_estimated_mean:.3f}\n"
+        )
+        report_lines.append(
+            f"  Estimated SE: {self.ensemble_estimated_standard_error:.5f}\n"
+        )
+        report_lines.append(f"  P-value: {self.ensemble_p_value_of_estimation:.5f}\n")
+        report_lines.append(f"  R² (game-level): {self.r_squared_estimated:.4f}\n")
+        report_lines.append(
+            f"  R² (match-level): {self.match_level_r_squared_estimated:.4f}\n"
+        )
+
+        # By definition, estimated Elo should fit better
+        if self.r_squared_estimated > self.r_squared_expected:
+            improvement = self.r_squared_estimated - self.r_squared_expected
+            report_lines.append(f"  ✓ Fitted model improves R² by {improvement:.4f}\n")
 
         return "".join(report_lines)
 
@@ -300,7 +424,8 @@ class RangeAnalysis:
                 zorder=3,
                 label=(
                     f"Expected (Elo={int(self.player.expected_elo)}, "
-                    f"p={self.ensemble_p_value_of_expectation:.3f})"
+                    f"p={self.ensemble_p_value_of_expectation:.3f}, "
+                    f"R²={self.r_squared_expected:.3f})"
                 ),
             )
 
@@ -319,11 +444,12 @@ class RangeAnalysis:
             zorder=3,
             label=(
                 f"Estimated (Elo={int(self.estimated_player_elo)}, "
-                f"p={self.ensemble_p_value_of_estimation:.3f})"
+                f"p={self.ensemble_p_value_of_estimation:.3f}, "
+                f"R²={self.r_squared_estimated:.3f})"
             ),
         )
 
-        # ----- STYLE -----
+        # ----- TITLE -----
         ax.set_title(f"{self.player.engine_type} (ID: {self.player.id})")  # pyright: ignore[reportUnknownMemberType]
         ax.set_ylabel("Mean score")  # pyright: ignore[reportUnknownMemberType]
         ax.set_ylim(0, 1)

@@ -1,4 +1,4 @@
-"""Helpers to compute statistics."""
+"""Helpers to compute statistics"""
 
 import math
 from typing import List
@@ -43,7 +43,9 @@ def standard_error_of_proportion(
     """Compute the standard error of a sample proportion.
 
     Args:
-        proportion: Observed or expected proportion value (between 0 and 1).
+        proportion: Proportion value (between 0 and 1).
+                   - For hypothesis testing: use expected/theoretical proportion
+                   - For confidence intervals: use observed proportion
         num_round: Number of rounds or trials used to estimate the proportion.
 
     Returns:
@@ -122,6 +124,54 @@ def compute_p_value(
         return float("nan")
 
     return float(2 * (1 - cdf))
+
+
+def coefficient_of_determination(
+    observed: List[float], predicted: List[float]
+) -> float:
+    """Calculate R² (coefficient of determination).
+
+    R² measures the proportion of variance in observed values explained by predicted values.
+
+    R² = 1 - (SS_res / SS_tot)
+    where:
+    - SS_res = sum of squared residuals = Σ(observed - predicted)²
+    - SS_tot = total sum of squares = Σ(observed - mean(observed))²
+
+    Args:
+        observed: List of observed values
+        predicted: List of predicted values (must be same length as observed)
+
+    Returns:
+        R² value between -∞ and 1, where:
+        - 1.0 = perfect prediction
+        - 0.0 = predictions no better than mean
+        - < 0 = predictions worse than just using mean
+        - NaN if no variance in observed values
+
+    Example:
+        >>> observed = [0.7, 0.45, 0.55, 0.8, 0.3]
+        >>> predicted = [0.65, 0.5, 0.5, 0.75, 0.35]
+        >>> r2 = coefficient_of_determination(observed, predicted)
+        >>> print(f"R² = {r2:.4f}")  # R² = 0.9204
+    """
+    if len(observed) != len(predicted):
+        raise ValueError("observed and predicted must have same length")
+
+    if len(observed) == 0:
+        return float("nan")
+
+    observed_mean = sum(observed) / len(observed)
+
+    variance_observed = sum((y - observed_mean) ** 2 for y in observed)
+    variance_from_prediction = sum(
+        (y - pred) ** 2 for y, pred in zip(observed, predicted)
+    )
+
+    if variance_observed == 0:
+        return float("nan")
+
+    return 1 - (variance_from_prediction / variance_observed)
 
 
 def ensemble_mean_score(
@@ -232,3 +282,67 @@ def compute_ensemble_p_value(
         return float("nan")
 
     return float(2 * (1 - cdf))
+
+
+def confidence_interval_proportion(
+    observed_proportion: float,
+    num_round: int,
+    confidence_level: float = 0.95,
+) -> tuple[float, float]:
+    """Calculate confidence interval for a proportion.
+
+    Uses normal approximation (valid when n*p >= 5 and n*(1-p) >= 5).
+
+    Args:
+        observed_proportion: Observed sample proportion (0 to 1)
+        num_round: Number of trials
+        confidence_level: Confidence level (default: 0.95 for 95% CI)
+
+    Returns:
+        Tuple of (lower_bound, upper_bound), clamped to [0, 1]
+
+    Example:
+        >>> ci_lower, ci_upper = confidence_interval_proportion(0.65, 100)
+        >>> print(f"95% CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
+    """
+    # For CI, use OBSERVED proportion
+    se = standard_error_of_proportion(observed_proportion, num_round)
+
+    # Get z-critical value for desired confidence level
+    alpha = 1 - confidence_level
+    z_critical = stats.norm.ppf(1 - alpha / 2)
+
+    margin = z_critical * se
+
+    lower = max(0.0, observed_proportion - margin)
+    upper = min(1.0, observed_proportion + margin)
+
+    return (lower, upper)
+
+
+def cohens_h(proportion1: float, proportion2: float) -> float:
+    """Calculate Cohen's h effect size for difference between two proportions.
+
+    Cohen's h is an effect size measure for comparing two proportions.
+    It's calculated as the difference between the arcsine transformations.
+
+    Effect size interpretation (Cohen, 1988):
+    - |h| < 0.2: small effect
+    - 0.2 ≤ |h| < 0.5: medium effect
+    - |h| ≥ 0.5: large effect
+
+    Args:
+        proportion1: First proportion (0 to 1)
+        proportion2: Second proportion (0 to 1)
+
+    Returns:
+        Cohen's h effect size
+
+    Example:
+        >>> h = cohens_h(0.65, 0.50)
+        >>> print(f"Effect size h = {h:.3f}")
+    """
+    phi1 = 2 * math.asin(math.sqrt(proportion1))
+    phi2 = 2 * math.asin(math.sqrt(proportion2))
+
+    return phi1 - phi2
