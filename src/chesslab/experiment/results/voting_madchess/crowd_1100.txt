@@ -1,0 +1,5 @@
+[seed=49] MadChess Gaussian 1100 (+/- 200) Elo x 10
+
+Observed ELO mean: 1033 (+/- 202) Elo
+
+716, 772, 796, 982, 1085, 1121, 1124, 1147, 1214, 1376
