@@ -106,14 +106,13 @@ if __name__ == "__main__":
                 for player in players
             ]
 
-            for range_analysis in ranges_analysis:
-                range_analysis.report
-                report_path = folder / f"player_{range_analysis.player.id}.txt"
+            # for range_analysis in ranges_analysis:
+            #     report_path = folder / f"player_{range_analysis.player.id}.txt"
 
-                with open(report_path, "w", encoding="utf-8") as f:
-                    f.write(range_analysis.report)
+            #     with open(report_path, "w", encoding="utf-8") as f:
+            #         f.write(range_analysis.report)
 
-                logger.info(f"Report created at {report_path}")
+            #     logger.info(f"Report created at {report_path}")
 
             num_subplot = len(players)
 
@@ -126,6 +125,7 @@ if __name__ == "__main__":
             for ax, range_analysis, name in zip(ax_list, ranges_analysis, names):
                 range_analysis.plot_score_on_ax(ax, ignore_declaration=True)
                 ax.set_title(name)
+                logger.info(f"{name} plotted")
 
             ax_list[-1].set_xlabel("Opponent MadChess Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()

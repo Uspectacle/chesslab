@@ -4,10 +4,10 @@ A modular, open-source chess engine testing and evaluation framework with Postgr
 
 ## Features
 
-- **Multiple Engine Types**: Stockfish, Maia2, LLM, voting ensembles
+- **Multiple Engine Types**: Stockfish, Arasan, MadChess, Maia2, LLM, voting ensembles
 - **Parallel Game Execution**: Run hundreds of games concurrently
 - **Persistent Storage**: Game history, moves, evaluations, engine configurations
-- **Statistical Analysis**: Elo estimation, confidence intervals, range analysis
+- **Statistical Analysis**: Elo estimation, confidence intervals, R² analysis, effect size measures
 - **LLM Integration**: HuggingFace models with customizable prompts and template variables
 - **Ensemble Methods**: Combine multiple engines with diverse voting strategies
 - **PGN Support**: Import/export games in standard PGN format
@@ -17,6 +17,8 @@ A modular, open-source chess engine testing and evaluation framework with Postgr
 - LLMs were used during the development of this project
 - **Maia2**: Neural network model for human-like chess play - [CSSLab/maia2](https://github.com/CSSLab/maia2)
 - **Stockfish**: Classical UCI chess engine - [official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish) (included as a git submodule)
+- **Arasan**: Classical UCI chess engine - [jdart1/arasan-chess](https://github.com/jdart1/arasan-chess) (included as a git submodule)
+- **MadChess**: Classical UCI chess engine - [ekmadsen/MadChess](https://github.com/ekmadsen/MadChess) (included as a git submodule)
 - **Chess.py**: Pure Python chess library - [niklasf/python-chess](https://github.com/niklasf/python-chess)
 
 ## Quick Start
@@ -119,14 +121,23 @@ psql -U chesslab -d chesslab -h localhost
 You are now ready to run the experiment suite:
 
 ```bash
-# Baseline Stockfish testing
-uv run -m chesslab.experiment.verify_stockfish
+# Baseline Stockfish Elo coherence testing
+uv run -m chesslab.experiment.coherence_stockfish
 
-# Maia engine validation
-uv run -m chesslab.experiment.verify_maia
+# MadChess Elo coherence validation
+uv run -m chesslab.experiment.coherence_madchess
 
-# Voting ensemble testing
-uv run -m chesslab.experiment.majority_voting
+# Maia engine Elo coherence validation
+uv run -m chesslab.experiment.coherence_maia
+
+# Stockfish against MadChess
+uv run -m chesslab.experiment.stockfish_on_madchess
+
+# Maia against MadChess
+uv run -m chesslab.experiment.maia_on_madchess
+
+# Voting ensemble testing with MadChess crowds
+uv run -m chesslab.experiment.voting_madchess
 
 # LLM prompt optimization
 uv run -m chesslab.experiment.llm_prompt
@@ -210,7 +221,7 @@ from chesslab.analysis.evaluator import Evaluator
 from chesslab.arena.run_match import run_range
 from chesslab.engines.init_engines import (
     get_llm_player,
-    get_stockfish_range,
+    get_madchess_range,
     get_session
 )
 
@@ -221,11 +232,11 @@ with get_session() as session:
         model_name="meta-llama/Llama-3.2-1B-Instruct"
     )
 
-    # Create range of Stockfish opponents (1320-2200 Elo, 3 steps)
-    opponents = get_stockfish_range(
+    # Create range of MadChess opponents (600-2600 Elo, 3 steps)
+    opponents = get_madchess_range(
         session=session,
-        min_elo=1320,
-        max_elo=2200,
+        min_elo=600,
+        max_elo=2600,
         num_step=3
     )
 
@@ -256,6 +267,8 @@ with get_session() as session:
 ### Engine Types and Implementations
 
 - **Stockfish** (`third_party/stockfish`): Classical UCI protocol engine ([official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish))
+- **Arasan** (`third_party/arasan`): Classical UCI protocol engine ([jdart1/arasan-chess](https://github.com/jdart1/arasan-chess))
+- **MadChess** (`third_party/MadChess`): Classical UCI protocol engine ([ekmadsen/MadChess](https://github.com/ekmadsen/MadChess))
 - **Random Engine** (`engines/random_engine.py`): Baseline random legal move generator
 - **Maia2 Engine** (`engines/maia_engine.py`): Neural network-based engine trained to simulate human play across skill levels ([CSSLab/maia2](https://github.com/CSSLab/maia2))
 - **LLM Engine** (`engines/llm_engine.py`): Large language model with customizable prompts

@@ -98,10 +98,19 @@ class VotingEngine(BaseEngine):
         """
         option = self.get_option("Weights")
 
-        if option is None or not str(option.value).strip():
-            return [1.0 for _ in self.player_ids]
+        # Handle None, empty string, or string "None"
+        if (
+            option is None
+            or not str(option.value).strip()
+            or str(option.value).strip().lower() == "none"
+        ):
+            default_weights = [1.0 for _ in self.player_ids]
+            return default_weights
 
         weights_str = str(option.value).strip()
+
+        if weights_str.startswith("[") and weights_str.endswith("]"):
+            weights_str = weights_str[1:-1].strip()
 
         try:
             weights = [float(w.strip()) for w in weights_str.split(",")]
