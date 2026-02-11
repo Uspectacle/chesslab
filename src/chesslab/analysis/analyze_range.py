@@ -368,7 +368,8 @@ class RangeAnalysis:
     def plot_score_on_ax(self, ax: Axes, ignore_declaration: bool = False) -> None:
         """Plot statistics for the player."""
         # ----- WIN/LOSS RATIO BARS -----
-        width = 30
+        elo_span = max(self.opponent_elos) - min(self.opponent_elos)
+        width = 0.3 * elo_span / len(self.opponent_elos)
         # Win ratio
         ax.bar(  # pyright: ignore[reportUnknownMemberType]
             self.opponent_elos,
