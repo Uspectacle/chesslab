@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import chess.engine
 import numpy as np
@@ -43,13 +43,14 @@ def get_maia_player(
     use_gpu: bool = True,
     create_not_raise: bool = True,
 ) -> Player:
+    elo = int(np.clip(elo, 1100, 1900))
     player = get_player_by_attributes(
         session=session,
         engine_type="MaiaEngine",
-        expected_elo=int(elo),
+        expected_elo=elo,
         options={
-            "UCI_Elo": int(elo),
-            "OpponentElo": int(opponent_elo) if opponent_elo is not None else int(elo),
+            "UCI_Elo": elo,
+            "OpponentElo": int(opponent_elo) if opponent_elo is not None else elo,
             "ModelType": "blitz" if for_blitz else "rapid",
             "Device": "gpu" if use_gpu and get_device() == "cuda" else "cpu",
         },
@@ -122,40 +123,108 @@ def get_llm_player(
 
 def get_voting_player(
     session: Session,
-    players: List[Player],
+    players: Optional[List[Player]] = None,
+    *,
     aggregator: str = "majority",
-    weights: Optional[List[float]] = None,
+    weights: Optional[List[float] | Literal["elo"]] = None,
     max_concurrent: int = 1,
+    crowd_kind: Literal[
+        "Stockfish gaussian", "MadChess gaussian", "Maia gaussian", "Explicit"
+    ] = "Explicit",
+    crowd_size: int = 10,
+    crowd_mean_elo: int = 1500,
+    crowd_std_dev: int = 200,
+    seed: Optional[int] = None,
     create_not_raise: bool = True,
     expected_elo: Optional[int] = None,
 ) -> Player:
-    player_ids = ",".join([str(player.id) for player in players])
+    """
+    Get or create a VotingEngine Player.
+
+    Two modes:
+
+    1) EXPLICIT CROWD (default)
+       - Provide `players=[...]`
+       - Stored via option: Crowd_ids="1,2,3"
+
+    2) GAUSSIAN-GENERATED CROWD
+       - Set players=None
+       - Must provide: crowd_kind + crowd_size
+       - Optionally: crowd_mean_elo, crowd_std_dev, seed
+    """
+
+    # ---------- Validate mode ----------
+    if players is not None and len(players):
+        # Explicit players mode
+        player_ids = ",".join(str(p.id) for p in players)
+        crowd_ids_option = player_ids
+    else:
+        # Gaussian mode validation
+        if crowd_kind is None:
+            raise ValueError(
+                "crowd_kind must be provided when players is None (Gaussian mode)"
+            )
+        if crowd_size is None:
+            raise ValueError(
+                "crowd_size must be provided when players is None (Gaussian mode)"
+            )
+
+        player_ids = "GAUSSIAN"
+        crowd_ids_option = "None"  # Important: triggers Gaussian generation
 
     logger.debug(
         "Getting or creating voting player",
         player_ids=player_ids,
         max_concurrent=max_concurrent,
+        gaussian=players is not None and len(players),
+        crowd_kind=crowd_kind,
     )
 
+    # ---------- Expected ELO ----------
     if expected_elo is None:
-        expected_elos = [player.expected_elo for player in players]
-        expected_elo = int(sum(expected_elos) / len(expected_elos))
+        if players is not None and len(players):
+            expected_elos = [p.expected_elo for p in players]
+            expected_elo = int(sum(expected_elos) / len(expected_elos))
+        else:
+            # In Gaussian mode, default to mean if provided, else 1500
+            expected_elo = crowd_mean_elo
+
+    # ---------- Build options dict ----------
+    options = {
+        # Common options
+        "Max_concurrent": max_concurrent,
+        "Aggregator": aggregator,
+        "Weights": weights if weights else "None",
+    }
+
+    # ---------- Add Gaussian options if in that mode ----------
+    if players is not None and len(players):
+        # Crowd selection
+        options.update({"Crowd_ids": crowd_ids_option})
+
+    if players is not None and len(players):
+        options.update(
+            {
+                "Crowd_kind": crowd_kind,
+                "Crowd_size": crowd_size,
+                "Crowd_mean_elo": crowd_mean_elo,
+                "Crowd_std_dev": crowd_std_dev,
+                "Seed": seed or 0,
+            }
+        )
 
     player = get_player_by_attributes(
         session=session,
         engine_type="VotingEngine",
         expected_elo=expected_elo,
-        options={
-            "Player_ids": player_ids,
-            "Max_concurrent": max_concurrent,
-            "Aggregator": aggregator,
-            "Weights": weights,
-        },
+        options=options,
         create_not_raise=create_not_raise,
     )
+
     logger.info(
         "Voting player ready",
         player_id=player.id,
+        mode="gaussian" if players is not None and len(players) else "explicit",
         player_ids=player_ids,
         max_concurrent=max_concurrent,
     )
@@ -175,17 +244,19 @@ def get_stockfish_player(
     depth: int = 10,
     create_not_raise: bool = True,
 ) -> Player:
-    if bool(elo):
+    calculated_elo = stockfish_elo(depth)
+    if elo:
+        elo = int(np.clip(elo, 1320, calculated_elo))
         options: Dict[str, Any] = {
             "UCI_LimitStrength": True,
-            "UCI_Elo": int(elo),
+            "UCI_Elo": elo,
         }
         logger.debug("Using Elo limit strength", elo=elo)
     else:
+        elo = calculated_elo
         options: Dict[str, Any] = {
             "UCI_LimitStrength": False,
         }
-        calculated_elo = stockfish_elo(depth)
         logger.debug(
             "No Elo specified, using unlimited strength",
             calculated_elo=calculated_elo,
@@ -194,7 +265,7 @@ def get_stockfish_player(
     player = get_player_by_attributes(
         session=session,
         engine_type="Stockfish",
-        expected_elo=int(elo) if elo else stockfish_elo(depth),
+        expected_elo=elo,
         options=options,
         limit=chess.engine.Limit(depth=depth),
         create_not_raise=create_not_raise,
@@ -214,21 +285,28 @@ def get_arasan_player(
     elo: Optional[int | float] = None,
     create_not_raise: bool = True,
 ) -> Player:
-    if bool(elo):
+    calculated_elo = 3450
+    if elo:
+        elo = int(np.clip(elo, 1320, calculated_elo))
         options: Dict[str, Any] = {
             "UCI_LimitStrength": True,
-            "UCI_Elo": int(elo),
+            "UCI_Elo": elo,
         }
         logger.debug("Using Elo limit strength", elo=elo)
     else:
+        elo = calculated_elo
         options: Dict[str, Any] = {
             "UCI_LimitStrength": False,
         }
+        logger.debug(
+            "No Elo specified, using unlimited strength",
+            calculated_elo=calculated_elo,
+        )
 
     player = get_player_by_attributes(
         session=session,
         engine_type="Arasan",
-        expected_elo=int(elo) if elo else 3450,
+        expected_elo=elo,
         options=options,
         create_not_raise=create_not_raise,
     )
@@ -327,38 +405,6 @@ def get_madchess_range(
     ]
 
 
-def get_stockfish_gaussian(
-    session: Session,
-    mean: float = 1700,
-    std_dev: float = 200,
-    num_samples: int = 10,
-    min_elo: int = 1320,
-    max_elo: int = 2200,
-    seed: Optional[int] = None,
-) -> list[Player]:
-    rng = np.random.default_rng(seed) if seed else np.random
-    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
-    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
-    sampled_elos = sampled_elos.astype(int)
-    return [get_stockfish_player(session=session, elo=elo) for elo in sampled_elos]
-
-
-def get_madchess_gaussian(
-    session: Session,
-    mean: float = 1100,
-    std_dev: float = 400,
-    num_samples: int = 10,
-    min_elo: int = 600,
-    max_elo: int = 2600,
-    seed: Optional[int] = None,
-) -> list[Player]:
-    rng = np.random.default_rng(seed) if seed else np.random
-    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
-    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
-    sampled_elos = sampled_elos.astype(int)
-    return [get_madchess_player(session=session, elo=elo) for elo in sampled_elos]
-
-
 def get_maia_range(
     session: Session,
     min_elo: int = 1100,
@@ -369,22 +415,6 @@ def get_maia_range(
         get_maia_player(session=session, elo=elo)
         for elo in np.linspace(min_elo, max_elo, num_step)
     ]
-
-
-def get_maia_gaussian(
-    session: Session,
-    mean: float = 1700,
-    std_dev: float = 400,
-    num_samples: int = 10,
-    min_elo: int = 1100,
-    max_elo: int = 1900,
-    seed: Optional[int] = None,
-) -> list[Player]:
-    rng = np.random.default_rng(seed) if seed else np.random
-    sampled_elos = rng.normal(loc=mean, scale=std_dev, size=num_samples)
-    sampled_elos = np.clip(sampled_elos, min_elo, max_elo)
-    sampled_elos = sampled_elos.astype(int)
-    return [get_maia_player(session=session, elo=elo) for elo in sampled_elos]
 
 
 if __name__ == "__main__":

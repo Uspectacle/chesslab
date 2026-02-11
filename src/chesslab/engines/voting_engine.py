@@ -1,11 +1,17 @@
 import asyncio
 import logging
-from typing import Dict, List
+from typing import List, Optional
 
 import chess
+import numpy as np
 import structlog
 
 from chesslab.engines.base_engine import BaseEngine
+from chesslab.engines.init_engines import (
+    get_madchess_player,
+    get_maia_player,
+    get_stockfish_player,
+)
 from chesslab.engines.options.aggregators import AGGREGATORS, Aggregator
 from chesslab.engines.options.options import OptionCombo, OptionSpin, OptionString
 from chesslab.engines.storage_tools import get_uci_move
@@ -13,6 +19,8 @@ from chesslab.storage import Player, get_session
 from chesslab.storage.player_tools import get_player_by_id
 
 logger = structlog.get_logger()
+
+CROWD_KINDS = ["Stockfish gaussian", "MadChess gaussian", "Maia gaussian", "Explicit"]
 
 
 async def get_votes(
@@ -41,14 +49,19 @@ class VotingEngine(BaseEngine):
     Attributes:
         name: Engine name identifier
         author: Engine author
-        options: List of configurable options (Player_ids, Max_concurrent)
+        options: List of configurable options (Crowd_ids, Max_concurrent)
     """
 
     name = "VotingEngine"
     author = "ChessLab"
     options = [
-        OptionString(name="Player_ids"),
-        OptionString(name="Weights"),
+        OptionSpin(name="Crowd_size", default=10, min=1, max=100),
+        OptionSpin(name="Crowd_mean_elo", default=1500, min=300, max=2600),
+        OptionSpin(name="Crowd_std_dev", default=200, min=0, max=2000),
+        OptionSpin(name="Seed", default=0, min=0, max=2147483647),
+        OptionCombo(name="Crowd_kind", default="Explicit", vars=CROWD_KINDS),
+        OptionString(name="Crowd_ids", default="None"),
+        OptionString(name="Weights", default="None"),
         OptionCombo(
             name="Aggregator", default="majority", vars=list(AGGREGATORS.keys())
         ),
@@ -57,9 +70,18 @@ class VotingEngine(BaseEngine):
 
     def __init__(self) -> None:
         """Initialize the voting engine."""
-        self._players: Dict[int, Player] = {}
+        self._players: List[Player] = []
         self._session = None
         super().__init__()
+
+    @property
+    def seed(self) -> int:
+        """Get the current random seed value."""
+        option = self.get_option("Seed")
+        if option is None:
+            raise RuntimeError("Option Seed not found")
+
+        return option.value
 
     @property
     def aggregator(self) -> Aggregator:
@@ -74,6 +96,42 @@ class VotingEngine(BaseEngine):
             raise ValueError(f"Aggregator {option.value} not defined")
 
         return aggregator
+
+    @property
+    def crowd_kind(self) -> str:
+        """Get the crowd kind."""
+        option = self.get_option("Crowd_kind")
+        if option is None:
+            raise RuntimeError("Option Crowd_kind not found")
+
+        return option.value
+
+    @property
+    def crowd_size(self) -> int:
+        if self.crowd_ids:
+            return len(self.crowd_ids)
+
+        option = self.get_option("Crowd_size")
+        if option is None:
+            raise RuntimeError("Option Crowd_size not found")
+
+        return option.value
+
+    @property
+    def crowd_mean_elo(self) -> int:
+        option = self.get_option("Crowd_mean_elo")
+        if option is None:
+            raise RuntimeError("Option Crowd_mean_elo not found")
+
+        return option.value
+
+    @property
+    def crowd_std_dev(self) -> int:
+        option = self.get_option("Crowd_std_dev")
+        if option is None:
+            raise RuntimeError("Option Crowd_std_dev not found")
+
+        return option.value
 
     @property
     def max_concurrent(self) -> int:
@@ -94,20 +152,24 @@ class VotingEngine(BaseEngine):
             List of weights (one per player)
 
         Raises:
-            ValueError: If weights list length doesn't match player_ids length or if weights are invalid
+            ValueError: If weights list length doesn't match players length or if weights are invalid
         """
+        if not len(self._players):
+            raise RuntimeError("Players not initialized before accessing weights")
+
         option = self.get_option("Weights")
 
-        # Handle None, empty string, or string "None"
         if (
             option is None
             or not str(option.value).strip()
             or str(option.value).strip().lower() == "none"
         ):
-            default_weights = [1.0 for _ in self.player_ids]
-            return default_weights
+            return [1.0 for _ in self._players]
 
         weights_str = str(option.value).strip()
+
+        if weights_str.lower() == "elo":
+            return [float(player.expected_elo) for player in self._players]
 
         if weights_str.startswith("[") and weights_str.endswith("]"):
             weights_str = weights_str[1:-1].strip()
@@ -117,33 +179,35 @@ class VotingEngine(BaseEngine):
         except ValueError as e:
             raise ValueError(f"Weights must be comma-separated numbers: {e}")
 
-        if len(weights) != len(self.player_ids):
+        if len(weights) != len(self._players):
             raise ValueError(
                 f"Number of weights ({len(weights)}) must match "
-                f"number of player_ids ({len(self.player_ids)})"
+                f"number of players ({len(self._players)})"
             )
 
         return weights
 
     @property
-    def player_ids(self) -> List[int]:
-        """Get the list of player IDs from the Player_ids option.
+    def crowd_ids(self) -> Optional[List[int]]:
+        """Get the list of player IDs from the Crowd_ids option.
 
         Returns:
-            List of player IDs to use for voting
-
-        Raises:
-            RuntimeError: If Player_ids option is not found or empty
+            List of player IDs to use for voting, or None if should generate from Gaussian
         """
-        option = self.get_option("Player_ids")
+        option = self.get_option("Crowd_ids")
 
-        if option is None:
-            raise RuntimeError("Option Player_ids not found")
+        if (
+            option is None
+            or not str(option.value).strip()
+            or str(option.value).strip().lower() == "none"
+        ):
+            # If no explicit IDs, return None - players will be generated from Gaussian
+            return None
 
         player_ids_str = str(option.value).strip()
 
-        if not player_ids_str:
-            raise RuntimeError("Option Player_ids is empty")
+        if player_ids_str.startswith("[") and player_ids_str.endswith("]"):
+            player_ids_str = player_ids_str[1:-1].strip()
 
         return [int(player_id.strip()) for player_id in player_ids_str.split(",")]
 
@@ -154,29 +218,70 @@ class VotingEngine(BaseEngine):
         super().reset()
 
     def reset_players(self) -> None:
-        """Load all players from the database.
+        """Load or generate all players.
+
+        If Crowd_ids is specified, load players from database by ID.
+        Otherwise, generate players using Gaussian distribution based on Crowd_kind.
 
         Raises:
-            ValueError: If any player ID is not found in the database
+            ValueError: If any player ID is not found in the database or if Crowd_kind is invalid
         """
         assert self._session, "Session must be initialized before loading players"
 
         self.quit_players()
 
-        for player_id in self.player_ids:
-            player = get_player_by_id(self._session, player_id)
+        crowd_ids = self.crowd_ids
 
-            if player is None:
-                raise ValueError(f"Player with ID {player_id} not found in database")
+        # If explicit IDs are provided, load from database
+        if crowd_ids is not None:
+            players: List[Player] = []
 
-            self._players[player_id] = player
+            for player_id in crowd_ids:
+                player = get_player_by_id(self._session, player_id)
 
-            logger.debug(
-                "Player loaded",
-                player_id=player_id,
-                engine_type=player.engine_type,
-                expected_elo=player.expected_elo,
+                if player is None:
+                    raise ValueError(
+                        f"Player with ID {player_id} not found in database"
+                    )
+
+                players.append(player)
+
+                logger.debug(
+                    "Player loaded",
+                    player_id=player_id,
+                    engine_type=player.engine_type,
+                    expected_elo=player.expected_elo,
+                )
+
+            self._players = players
+        else:
+            # Generate players from Gaussian distribution
+            crowd_kind = self.crowd_kind
+            rng = np.random.default_rng(self.seed) if self.seed else np.random
+            sampled_elos = rng.normal(
+                loc=self.crowd_mean_elo, scale=self.crowd_std_dev, size=self.crowd_size
             )
+
+            if crowd_kind == "Stockfish gaussian":
+                self._players = [
+                    get_stockfish_player(session=self._session, elo=elo)
+                    for elo in sampled_elos
+                ]
+            elif crowd_kind == "MadChess gaussian":
+                self._players = [
+                    get_madchess_player(session=self._session, elo=elo)
+                    for elo in sampled_elos
+                ]
+            elif crowd_kind == "Maia gaussian":
+                self._players = [
+                    get_maia_player(session=self._session, elo=elo)
+                    for elo in sampled_elos
+                ]
+            else:
+                raise ValueError(
+                    f"Invalid Crowd_kind: {crowd_kind}. "
+                    f"Must be one of: {CROWD_KINDS} or set Crowd_ids explicitly"
+                )
 
     def reset_session(self) -> None:
         """Reset the database session."""
@@ -186,7 +291,7 @@ class VotingEngine(BaseEngine):
 
     def quit_players(self) -> None:
         """Clear all loaded players."""
-        self._players = {}
+        self._players = []
 
     def quit_session(self) -> None:
         """Close the database session."""
@@ -223,11 +328,10 @@ class VotingEngine(BaseEngine):
             f"Engine {self.name} board not initialized - call position() first"
         )
         board = self._board
-        players = list(self._players.values())
         votes = asyncio.run(
             get_votes(
                 board=board,
-                players=players,
+                players=self._players,
                 max_concurrent=self.max_concurrent,
             )
         )
@@ -241,8 +345,21 @@ if __name__ == "__main__":
     #
     # Example UCI session:
     #   uci
-    #   setoption name Player_ids value 1,2,3
+    #   setoption name Crowd_ids value 1,2,3
     #   setoption name Max_concurrent value 2
+    #   isready
+    #   ucinewgame
+    #   position startpos moves e2e4
+    #   go
+    #   quit
+    #
+    # Or with Gaussian generation:
+    #   uci
+    #   setoption name Crowd_kind value Stockfish gaussian
+    #   setoption name Crowd_size value 20
+    #   setoption name Crowd_mean_elo value 1800
+    #   setoption name Crowd_std_dev value 150
+    #   setoption name Seed value 42
     #   isready
     #   ucinewgame
     #   position startpos moves e2e4
