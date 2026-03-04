@@ -17,15 +17,15 @@ logger = structlog.get_logger()
 
 
 if __name__ == "__main__":
-    logger.info("Aggregation variation script")
-    folder = Path(__file__).parent / "results/aggregation_variation"
+    logger.info("Std_dev variation script")
+    folder = Path(__file__).parent / "results/std_dev_variation"
     folder.mkdir(parents=True, exist_ok=True)
 
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
 
-    num_games = 10
+    num_games = 100
     aggregator = "majority"
     crowd_kind = "MadChess gaussian"
     crowd_mean_elo = 1500
@@ -35,11 +35,11 @@ if __name__ == "__main__":
         crowd_path = folder / "crowd.txt"
 
         options = {
-            session: session,
-            aggregator: aggregator,
-            crowd_kind: crowd_kind,
-            crowd_size: crowd_size,
-            crowd_mean_elo: crowd_mean_elo,
+            "session": session,
+            "aggregator": aggregator,
+            "crowd_kind": crowd_kind,
+            "crowd_size": crowd_size,
+            "crowd_mean_elo": crowd_mean_elo,
         }
 
         players = [

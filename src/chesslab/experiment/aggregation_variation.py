@@ -25,7 +25,7 @@ if __name__ == "__main__":
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
 
-    num_games = 10
+    num_games = 100
     crowd_kind = "MadChess gaussian"
     crowd_mean_elo = 1500
     crowd_std_dev = 200
@@ -35,11 +35,11 @@ if __name__ == "__main__":
         crowd_path = folder / "crowd.txt"
 
         options = {
-            session: session,
-            crowd_kind: crowd_kind,
-            crowd_size: crowd_size,
-            crowd_std_dev: crowd_std_dev,
-            crowd_mean_elo: crowd_mean_elo,
+            "session": session,
+            "crowd_kind": crowd_kind,
+            "crowd_size": crowd_size,
+            "crowd_std_dev": crowd_std_dev,
+            "crowd_mean_elo": crowd_mean_elo,
         }
 
         players = [

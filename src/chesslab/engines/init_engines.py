@@ -201,8 +201,7 @@ def get_voting_player(
     if players is not None and len(players):
         # Crowd selection
         options.update({"Crowd_ids": crowd_ids_option})
-
-    if players is not None and len(players):
+    else:
         options.update(
             {
                 "Crowd_kind": crowd_kind,
@@ -327,6 +326,7 @@ def get_madchess_player(
     create_not_raise: bool = True,
 ) -> Player:
     if bool(elo):
+        elo = int(np.clip(elo, 600, 2600))
         options: Dict[str, Any] = {
             "UCI_LimitStrength": True,
             "UCI_Elo": int(elo),
@@ -340,7 +340,7 @@ def get_madchess_player(
     player = get_player_by_attributes(
         session=session,
         engine_type="MadChess",
-        expected_elo=int(elo) if elo else 2800,
+        expected_elo=int(elo) if elo else 2600,
         options=options,
         limit=chess.engine.Limit(time=time),
         create_not_raise=create_not_raise,

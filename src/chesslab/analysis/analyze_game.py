@@ -48,10 +48,10 @@ class GameAnalysis:
         return 0.5
 
     def get_score(self, player_id: int) -> float:
-        if player_id is self.game.white_player_id:
+        if player_id == self.game.white_player_id:
             return self.white_score
 
-        if player_id is self.game.black_player_id:
+        if player_id == self.game.black_player_id:
             return self.black_score
 
         raise ValueError(f"Player {player_id} is not in the game {self.game.id}")

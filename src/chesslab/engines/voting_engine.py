@@ -258,9 +258,14 @@ class VotingEngine(BaseEngine):
             # Generate players from Gaussian distribution
             crowd_kind = self.crowd_kind
             rng = np.random.default_rng(self.seed) if self.seed else np.random
-            sampled_elos = rng.normal(
-                loc=self.crowd_mean_elo, scale=self.crowd_std_dev, size=self.crowd_size
-            )
+            if self.crowd_std_dev:
+                sampled_elos = rng.normal(
+                    loc=self.crowd_mean_elo,
+                    scale=self.crowd_std_dev,
+                    size=self.crowd_size,
+                )
+            else:
+                sampled_elos = [self.crowd_mean_elo for _ in range(self.crowd_size)]
 
             if crowd_kind == "Stockfish gaussian":
                 self._players = [

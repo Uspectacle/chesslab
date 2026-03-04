@@ -7,55 +7,26 @@ from matplotlib import pyplot as plt
 from chesslab.analysis.analyze_range import RangeAnalysis
 from chesslab.analysis.evaluator import Evaluator
 from chesslab.arena.run_match import run_range
-from chesslab.engines.init_engines import (
-    get_madchess_range,
-    get_voting_player,
-)
+from chesslab.engines.init_engines import get_maia_range, get_stockfish_range
 from chesslab.storage import get_session
 
 logger = structlog.get_logger()
 
+num_games = 100
 
 if __name__ == "__main__":
-    logger.info("Size variation script")
-    folder = Path(__file__).parent / "results/size_variation"
+    logger.info("Starting Maia on Stockfish script")
+    folder = Path(__file__).parent / "results/maia_on_stockfish"
     folder.mkdir(parents=True, exist_ok=True)
 
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
     )
 
-    num_games = 100
-    aggregator = "majority"
-    crowd_kind = "MadChess gaussian"
-    crowd_mean_elo = 1500
-    crowd_std_dev = 200
-
     with get_session() as session:
-        crowd_path = folder / "crowd.txt"
+        players = get_maia_range(session=session, num_step=5)
 
-        options = {
-            "session": session,
-            "aggregator": aggregator,
-            "crowd_kind": crowd_kind,
-            "crowd_std_dev": crowd_std_dev,
-            "crowd_mean_elo": crowd_mean_elo,
-        }
-        players = [
-            get_voting_player(crowd_size=1, **options),
-            get_voting_player(crowd_size=2, **options),
-            get_voting_player(crowd_size=4, **options),
-            get_voting_player(crowd_size=8, **options),
-            get_voting_player(crowd_size=16, **options),
-            get_voting_player(crowd_size=32, **options),
-            get_voting_player(crowd_size=64, **options),
-        ]
-        names = [
-            f"Crowd size = {player.options.get('Crowd_size')}" for player in players
-        ]
-        opponents = get_madchess_range(
-            session=session, min_elo=800, max_elo=2000, num_step=7
-        )
+        opponents = get_stockfish_range(session=session)
 
         run_range(
             session=session,
@@ -80,6 +51,14 @@ if __name__ == "__main__":
                 for player in players
             ]
 
+            # for range_analysis in ranges_analysis:
+            #     report_path = folder / f"player_{range_analysis.player.id}.txt"
+
+            #     with open(report_path, "w", encoding="utf-8") as f:
+            #         f.write(range_analysis.report)
+
+            #     logger.info(f"Report created at {report_path}")
+
             num_subplot = len(players)
 
             _fig, axes = plt.subplots(  # pyright: ignore[reportUnknownMemberType]
@@ -88,12 +67,12 @@ if __name__ == "__main__":
 
             ax_list = axes if num_subplot > 1 else [axes]  # pyright: ignore[reportAssignmentType]
 
-            for ax, range_analysis, name in zip(ax_list, ranges_analysis, names):
-                range_analysis.plot_score_on_ax(ax, ignore_declaration=True)
-                ax.set_title(name)
-                logger.info(f"{name} plotted")
+            for ax, range_analysis in zip(ax_list, ranges_analysis):
+                range_analysis.plot_score_on_ax(ax)
+                ax.set_title(f"Maia {range_analysis.player.expected_elo} ELO")
+                logger.info(f"Maia {range_analysis.player.expected_elo} plotted")
 
-            ax_list[-1].set_xlabel("Opponent MadChess Elo")  # pyright: ignore[reportUnknownMemberType]
+            ax_list[-1].set_xlabel("Opponent Stockfish Elo")  # pyright: ignore[reportUnknownMemberType]
             plt.tight_layout()
 
             plot_path = folder / "plot.png"

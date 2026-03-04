@@ -61,15 +61,6 @@ if __name__ == "__main__":
                 for player in players
             ]
 
-            for range_analysis in ranges_analysis:
-                range_analysis.report
-                report_path = folder / f"player_{range_analysis.player.id}.txt"
-
-                with open(report_path, "w", encoding="utf-8") as f:
-                    f.write(range_analysis.report)
-
-                logger.info(f"Repport created at {report_path}")
-
             num_subplot = len(players)
 
             _fig, axes = plt.subplots(  # pyright: ignore[reportUnknownMemberType]
