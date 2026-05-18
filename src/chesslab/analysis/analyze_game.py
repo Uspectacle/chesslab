@@ -135,6 +135,31 @@ class GameAnalysis:
 
         raise ValueError(f"Player {player_id} is not in the game {self.game.id}")
 
+    def get_player_moves_centipawn_losses(self, player_id: int) -> list[float]:
+        """Return list of centipawn losses for each move by the player.
+
+        Args:
+            player_id: The player ID to extract moves for
+
+        Returns:
+            List of centipawn losses for each move by the player
+        """
+        board = chess.Board()
+        losses = []
+
+        player_is_white = player_id == self.game.white_player_id
+        if not player_is_white and player_id != self.game.black_player_id:
+            raise ValueError(f"Player {player_id} is not in the game {self.game.id}")
+
+        for move in self.board.move_stack:
+            if board.turn == chess.WHITE and player_is_white:
+                losses.append(self.evaluator.get_centipawn_loss(board, move))
+            elif board.turn == chess.BLACK and not player_is_white:
+                losses.append(self.evaluator.get_centipawn_loss(board, move))
+            board.push(move)
+
+        return losses
+
     @property
     def report(self) -> str:
         """Determine whether to use t-test or z-test based on number of games."""

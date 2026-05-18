@@ -11,13 +11,13 @@ from chesslab.env import get_stockfish_url
 class Evaluator:
     """Reusable chess position evaluator using Stockfish."""
 
-    def __init__(self, depth: int = 10, mate_score: int = 20000):
+    def __init__(self, depth: int = 10, mate_score: int = 2000):
         """Initialize the evaluator with a persistent Stockfish engine.
 
         Args:
             stockfish_path: Path to Stockfish executable
             depth: Search depth for evaluation (default: 10)
-            mate_score: Score to assign for mate positions (default: 20000)
+            mate_score: Score to assign for mate positions (default: 2000)
         """
         self.engine = chess.engine.SimpleEngine.popen_uci(get_stockfish_url())
         self.depth = depth
